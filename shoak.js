@@ -38,20 +38,26 @@ class Shoak extends Motile {
         }
 
         const result = this.brain.evaluate(sight)
+        const mag = map(result.values[1], 0, 1, this.minSpeed, this.maxSpeed)
+        this.velocity.rotate(map(result.values[0], 0, 1, -PI / 12, PI / 12))
+        const force = p5.Vector.fromAngle(this.velocity, mag)
 
-        const steering = p5.Vector.fromAngle(map(result.values[0], 0, 1, 0, TWO_PI))
-        steering.setMag(map(result.values[1], 0, 1, 0, this.maxSpeed))
+        this.applyForce(force)
 
-        this.steer(steering)
+        stroke(255, 255 - (mag / this.maxSpeed * 255), 0)
+        force.setMag(100)
+        strokeWeight(2)
+        line(this.position.x, this.position.y, this.position.x + force.x, this.position.y + force.y)
 
-        steering.setMag(steering.mag() * 500)
+        const velocity = createVector(this.velocity.x, this.velocity.y)
+        velocity.setMag(100)
         stroke(0, 0, 255)
         strokeWeight(2)
-        line(this.position.x, this.position.y, this.position.x + steering.x, this.position.y + steering.y)
+        line(this.position.x, this.position.y, this.position.x + velocity.x, this.position.y + velocity.y)
     }
 
     eat(qtree) {
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 5))
+        const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 10))
 
         for (let point of points) {
             flock.population().splice(flock.population().indexOf(point.data.boid), 1)

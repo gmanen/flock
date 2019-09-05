@@ -1,6 +1,6 @@
 const flockSize = 150
 const flock = new Population(flockSize, 0.001, 0.2, () => new Boid())
-const frenzySize = 5
+const frenzySize = 10
 const frenzy = new Population(frenzySize, 0.001, 0.2, () => new Shoak())
 const padding = 25
 
