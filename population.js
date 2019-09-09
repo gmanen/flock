@@ -6,9 +6,10 @@ class Population {
         this.generateIndividual = generateIndividual
 
         this.individuals = []
-        this.graveyard = []
+        this.graveyard = new Graveyard(5)
         this.currentBest = 0
         this.allTimeBest = 0
+        this.aliveBest = null
         this.generation = 1
     }
 
@@ -31,19 +32,22 @@ class Population {
             return
         }
 
-        this.select(this.size, this.graveyard)
+        this.select(this.size, this.graveyard.getAllCorpses())
 
-        this.graveyard = []
         this.generation++
         this.currentBest = 0
     }
 
     hunger() {
+        this.aliveBest = null
+
         for (let i = this.individuals.length - 1; i >=0; i--) {
             this.individuals[i].hunger()
 
             if (this.individuals[i].mass <= 0) {
-                this.graveyard.push(this.individuals.splice(i, 1)[0])
+                this.graveyard.addCorpse(this.individuals.splice(i, 1)[0])
+            } else if (null === this.aliveBest || this.individuals[i].fitness() > this.aliveBest.fitness()) {
+                this.aliveBest = this.individuals[i]
             }
         }
     }

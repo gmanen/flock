@@ -5,7 +5,7 @@ class Motile {
         this.maxSpeed = maxSpeed
         this.maxForce = maxForce
 
-        this.position = createVector(random(width), random(height))
+        this.position = createVector(random(topDownWidth), random(topDownHeight))
         this.velocity = p5.Vector.random2D()
         this.velocity.setMag(this.baseSpeed)
         this.acceleration = createVector()
@@ -50,8 +50,8 @@ class Motile {
 
     update() {
         this.position.add(this.velocity)
-        this.position.x = constrain(this.position.x, 0, width)
-        this.position.y = constrain(this.position.y, 0, height)
+        this.position.x = constrain(this.position.x, 0, topDownWidth)
+        this.position.y = constrain(this.position.y, 0, topDownHeight)
         this.velocity.add(this.acceleration)
         this.velocity.limit(this.maxSpeed)
         this.velocity.setMag(max(this.velocity.mag(), this.minSpeed))

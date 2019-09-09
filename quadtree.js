@@ -100,7 +100,7 @@ class Rectangle {
         const w = this.w
         const h = this.h
 
-        return !(point.x >= x + w || point.x <= x - w || point.y <= y - w || point.y >= y + w)
+        return !(point.x >= x + w || point.x <= x - w || point.y <= y - h || point.y >= y + h)
     }
 }
 
@@ -247,6 +247,8 @@ class Quadtree {
             this.regions.map(region => {
                 region.show()
             })
+        } else {
+            text(this.count(), this.boundary.x, this.boundary.y)
         }
     }
 }

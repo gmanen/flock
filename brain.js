@@ -5,80 +5,73 @@ class Brain {
 
         if (inputs !== undefined) {
             for (let layerSize of [...layers, outputs]) {
-                let layer = new Vector(layerSize)
-                layer.randomize()
-
-                this.biases.push(layer)
+                this.biases.push(nj.zeros(layerSize))
             }
 
             const totalLayers = [inputs, ...layers, outputs]
 
             for (let i = 0; i < totalLayers.length - 1; i++) {
-                let matrix = new Matrix(totalLayers[i + 1], totalLayers[i])
-                matrix.randomize()
+                this.weights.push(nj.zeros([totalLayers[i + 1], totalLayers[i]]))
+            }
+        }
+    }
 
-                this.weights.push(matrix)
+    randomize() {
+        for (let biases of this.biases) {
+            for (let i = 0; i < biases.tolist().length; i++) {
+                biases.set(i, randomGaussian())
+            }
+        }
+
+        for (let weights of this.weights) {
+            let shape = weights.shape
+
+            for (let i = 0; i < shape[0]; i++) {
+                for (let j = 0; j < shape[1]; j++) {
+                    weights.set(i, j, randomGaussian())
+                }
             }
         }
     }
 
     evaluate(inputArray) {
-        let inputVector = Vector.fromArray(inputArray)
-
         for (let i = 0; i < this.weights.length; i++) {
-            let dotProduct = this.weights[i].dot(inputVector)
-            let addedBiases = dotProduct.add(this.biases[i])
+            let weightedSumBiased = nj.dot(this.weights[i], inputArray).add(this.biases[i])
 
-            inputVector = addedBiases.map(value => 1 / (1 + Math.exp(-value)))
+            inputArray = nj.sigmoid(weightedSumBiased)
         }
 
-        return inputVector
+        return inputArray.tolist()
     }
 
     clone() {
         const brain = new Brain()
 
         for (let vector of this.biases) {
-            let values = []
-
-            for (let value of vector.values) {
-                values.push(value)
-            }
-
-            brain.biases.push(Vector.fromArray(values))
+            brain.biases = vector.clone()
         }
 
         for (let matrix of this.weights) {
-            let values = []
-
-            for (let row of matrix.rows) {
-                let rowValues = []
-
-                for (let value of row) {
-                    rowValues.push(value)
-                }
-
-                values.push(rowValues)
-            }
-
-            brain.weights.push(Matrix.fromArray(values))
+            brain.weights.push(matrix.clone())
         }
     }
 
     mutate(rate) {
         for (let biases of this.biases) {
-            for (let i = 0; i < biases.length(); i++) {
+            for (let i = 0; i < biases.tolist().length; i++) {
                 if (Math.random() < rate) {
-                    biases.values[i] = biases.values[i] + random(-0.1, 0.1)
+                    biases.set(i, biases.get(i) + random(-0.1, 0.1))
                 }
             }
         }
 
         for (let weights of this.weights) {
-            for (let i = 0; i < weights.rows.length; i++) {
-                for (let j = 0; j < weights.rows[i].length; j++) {
+            let shape = weights.shape
+
+            for (let i = 0; i < shape[0]; i++) {
+                for (let j = 0; j < shape[1]; j++) {
                     if (Math.random() < rate) {
-                        weights.rows[i][j] = weights.rows[i][j] + random(-0.1, 0.1)
+                        weights.set(i, j, weights.get(i, j) + random(-0.1, 0.1))
                     }
                 }
             }

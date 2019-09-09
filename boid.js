@@ -11,6 +11,9 @@ class Boid extends Motile {
         this.separationWeight = 1.5
 
         this.fov = 8 * PI / 10
+
+        this.angle = radians(135)
+        this.radius = 15
     }
 
     flock(qtree) {
@@ -132,39 +135,26 @@ class Boid extends Motile {
 
     poly() {
         const poly = []
-
-        const head = createVector(this.velocity.x, this.velocity.y)
-        head.setMag(5)
+        const head = p5.Vector.fromAngle(this.velocity.heading(), this.radius)
 
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
-        head.rotate(radians(135))
-        head.setMag(3)
+        head.rotate(this.angle)
+        head.setMag(this.radius / 2)
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
-        head.rotate(radians(-270))
+        head.rotate(-2 * this.angle)
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
 
         return poly
     }
 
     show() {
-        strokeWeight(5)
-        stroke(200)
-        beginShape()
+        strokeWeight(1)
+        stroke(255)
+        fill(255)
+        beginShape(TRIANGLES)
         for (let point of this.poly()) {
             vertex(point.x, point.y)
         }
         endShape(CLOSE)
-    }
-
-    setPosition(x, y) {
-        this.position = new p5.Vector(x, y)
-    }
-
-    setVelocity(x, y) {
-        this.velocity = new p5.Vector(x, y)
-    }
-
-    setAcceleration(x, y) {
-        this.acceleration = new p5.Vector(x, y)
     }
 }

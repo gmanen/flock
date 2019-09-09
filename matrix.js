@@ -27,7 +27,7 @@ class Vector {
 
     randomize() {
         for (let i = 0; i < this.values.length; i++) {
-            this.values[i] = randomGaussian()
+            this.values[i] = 0
         }
     }
 
@@ -70,7 +70,7 @@ class Matrix {
     randomize() {
         for (let i = 0; i < this.rows.length; i++) {
             for (let j = 0; j < this.rows[i].length; j++) {
-                this.rows[i][j] = randomGaussian()
+                this.rows[i][j] = randomGaussian(0, Math.sqrt(1/this.rows[i].length))
             }
         }
     }
