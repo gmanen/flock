@@ -1,10 +1,16 @@
+const activationFunctions = {
+    'sigmoid': value => 1/(1+Math.exp(-value)),
+    'relu': value => value < 0 ? 0 : value,
+}
+
 class Brain {
-    constructor(inputs, layers, outputs) {
+    constructor(inputs, layers, outputs, activationFunction) {
         this.biases = []
         this.weights = []
+        this.activationFunction = activationFunction || 'sigmoid'
 
         if (inputs !== undefined) {
-            for (let layerSize of [...layers, outputs]) {
+            for (const layerSize of [...layers, outputs]) {
                 this.biases.push(nj.zeros(layerSize))
             }
 
@@ -17,14 +23,14 @@ class Brain {
     }
 
     randomize() {
-        for (let biases of this.biases) {
+        for (const biases of this.biases) {
             for (let i = 0; i < biases.tolist().length; i++) {
                 biases.set(i, randomGaussian())
             }
         }
 
-        for (let weights of this.weights) {
-            let shape = weights.shape
+        for (const weights of this.weights) {
+            const shape = weights.shape
 
             for (let i = 0; i < shape[0]; i++) {
                 for (let j = 0; j < shape[1]; j++) {
@@ -36,26 +42,32 @@ class Brain {
 
     evaluate(inputArray) {
         for (let i = 0; i < this.weights.length; i++) {
-            inputArray = nj.sigmoid(nj.add(nj.dot(this.weights[i], inputArray), this.biases[i]))
+            inputArray = nj.add(nj.dot(this.weights[i], inputArray), this.biases[i]).tolist()
+
+            if (i < this.weights.length - 1) {
+                inputArray = inputArray.map(activationFunctions[this.activationFunction])
+            }
         }
 
-        return inputArray.tolist()
+        return 'sigmoid' !== this.activationFunction ? inputArray : inputArray.map(activationFunctions[this.activationFunction])
     }
 
     clone() {
         const brain = new Brain()
+        brain.activationFunction = this.activationFunction
 
-        for (let vector of this.biases) {
+        for (const vector of this.biases) {
             brain.biases.push(vector.clone())
         }
 
-        for (let matrix of this.weights) {
+        for (const matrix of this.weights) {
             brain.weights.push(matrix.clone())
         }
     }
 
     mutate(rate) {
-        let mutations = []
+        const mutations = []
+
         if (debug) {
             console.log('Start mutation with rate '+rate)
         }

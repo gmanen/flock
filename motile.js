@@ -5,7 +5,7 @@ class Motile {
         this.maxSpeed = maxSpeed
         this.maxForce = maxForce
 
-        this.position = createVector(random(sceneWidth), random(topDownHeight))
+        this.position = createVector(random(topDownWidth), random(sceneHeight))
         this.velocity = p5.Vector.random2D()
         this.velocity.setMag(this.baseSpeed)
         this.acceleration = createVector()
@@ -13,27 +13,25 @@ class Motile {
         this.mass = mass || 1
     }
 
+    radius() {
+        return 1
+    }
+
     bind(xMin, xMax, yMin, yMax) {
-        let force = null
-
-        if (this.position.x + this.velocity.x < xMin) {
-            force = createVector(this.maxSpeed, 0)
+        if (this.position.x + this.velocity.x - this.radius() < xMin) {
+            this.applyForce(createVector(this.maxSpeed, 0))
         }
 
-        if (this.position.x + this.velocity.x > xMax) {
-            force = createVector(this.maxSpeed * -1, 0)
+        if (this.position.x + this.velocity.x + this.radius() > xMax) {
+            this.applyForce(createVector(this.maxSpeed * -1, 0))
         }
 
-        if (this.position.y + this.velocity.y < yMin) {
-            force = createVector(0, this.maxSpeed)
+        if (this.position.y + this.velocity.y - this.radius() < yMin) {
+            this.applyForce(createVector(0, this.maxSpeed))
         }
 
-        if (this.position.y + this.velocity.y > yMax) {
-            force = createVector(0, this.maxSpeed * -1)
-        }
-
-        if (null !== force) {
-            this.applyForce(force, this.maxForce * 2)
+        if (this.position.y + this.velocity.y + this.radius() > yMax) {
+            this.applyForce(createVector(0, this.maxSpeed * -1))
         }
     }
 
@@ -50,8 +48,8 @@ class Motile {
 
     update() {
         this.position.add(this.velocity)
-        this.position.x = constrain(this.position.x, 0, sceneWidth)
-        this.position.y = constrain(this.position.y, 0, topDownHeight)
+        this.position.x = constrain(this.position.x, 0, topDownWidth)
+        this.position.y = constrain(this.position.y, 0, sceneHeight)
         this.velocity.add(this.acceleration)
         this.velocity.limit(this.maxSpeed)
         this.velocity.setMag(max(this.velocity.mag(), this.minSpeed))

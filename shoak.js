@@ -6,7 +6,7 @@ class Shoak extends Motile {
         this.resolution = 0.5
 
         if (!brain) {
-            brain = new Brain(this.fov / this.resolution, [15, 15], 2)
+            brain = new Brain(this.fov / this.resolution, [15, 15], 2, 'relu')
             brain.randomize()
         }
 
@@ -15,27 +15,31 @@ class Shoak extends Motile {
         this.score = 0
         this.color = shoakColor || [random(255), random(255), random(255)]
         this.sight = []
+
+        this.angles = []
+        this.angleSD = 0
+
+        this.flock = new Population(flockSize, 0.001, 0.1, () => new Boid())
     }
 
     radius() {
-        return 10 + this.mass
+        return 5 + this.mass
     }
 
     think(qtree) {
         const sight = []
         this.sight = []
         const angleVector = p5.Vector.fromAngle(this.velocity.heading(), 1)
-        const maxDist = Math.sqrt(sceneWidth * sceneWidth + topDownHeight * topDownHeight)
+        const maxDist = Math.sqrt(topDownWidth * topDownWidth + sceneHeight * sceneHeight)
         angleVector.rotate(radians(-this.fov / 2))
 
         for (let i = 0; i < this.fov; i += this.resolution) {
-            let ray = createVector(this.position.x + angleVector.x, this.position.y + angleVector.y)
-            let points = qtree.queryLine(new Line(this.position, ray))
+            const points = qtree.queryLine(new Line(this.position, createVector(this.position.x + angleVector.x, this.position.y + angleVector.y)))
             let closest = Infinity
             let closestPoint = null
 
-            for (let point of points) {
-                let d = p5.Vector.dist(this.position, point)
+            for (const point of points) {
+                const d = p5.Vector.dist(this.position, point)
 
                 if (d < closest) {
                     closest = d
@@ -44,7 +48,7 @@ class Shoak extends Motile {
             }
 
             if (debug) {
-                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? sceneWidth : closest)
+                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? topDownWidth : closest)
                 stroke(255, 255, 255, 20)
                 strokeWeight(2)
                 line(this.position.x, this.position.y, this.position.x + drawRay.x, this.position.y + drawRay.y)
@@ -57,11 +61,11 @@ class Shoak extends Motile {
                 }
             }
 
-            let distance = Infinity === closest ? maxDist : closest
+            const distance = Infinity === closest ? maxDist : closest
 
-            sight.push(map(distance, 0, perceptionRadius, 1, 0, true))
-
+            sight.push(map(distance, 0, maxDist, 1, 0, true))
             this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
+
             angleVector.rotate(radians(this.resolution))
         }
 
@@ -73,9 +77,16 @@ class Shoak extends Motile {
         }
 
         const result = this.brain.evaluate(sight)
-        const mag = map(result[0], 0, 1, this.minSpeed, this.maxSpeed)
+        const mag = constrain(result[0], this.minSpeed, this.maxSpeed)
+        const direction = constrain(result[1], -PI/12, PI/12)
 
-        this.velocity.rotate(map(result[1], 0, 1, -1 * PI / 4, PI / 4))
+        if (this.score < 200) {
+            this.angles.push(degrees(direction))
+            const mean = this.angles.reduce((sum, value) => {return sum + value}, 0) / this.angles.length
+            this.angleSD = Math.sqrt(this.angles.reduce((sum, value) => {return sum + (value - mean) * (value - mean)}, 0) / (this.angles.length - 1))
+        }
+
+        this.velocity.rotate(direction)
         const force = p5.Vector.fromAngle(this.velocity, mag)
 
         this.applyForce(force)
@@ -91,9 +102,9 @@ class Shoak extends Motile {
     eat(qtree) {
         const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 15))
 
-        for (let point of points) {
-            flock.population().splice(flock.population().indexOf(point.data.boid), 1)
-            this.mass = constrain(this.mass + 0.5, 0, this.maxMass)
+        for (const point of points) {
+            this.flock.population().splice(this.flock.population().indexOf(point.data.boid), 1)
+            this.mass = constrain(this.mass + 1, 0, this.maxMass)
         }
     }
 
@@ -110,7 +121,11 @@ class Shoak extends Motile {
     }
 
     hunger() {
-        this.mass -= 0.1
+        this.mass -= 0.02
+
+        if (this.score > 100 && this.angleSD < 5) {
+            this.mass -= 1
+        }
     }
 
     reproduce() {
@@ -122,7 +137,9 @@ class Shoak extends Motile {
     }
 
     fitness() {
-        return Math.pow(this.score, 4)
+        const sd = map(this.angleSD, 0, 3, 0, 1, true)
+
+        return Math.pow(this.score * sd + 1, 4)
     }
 
     species() {

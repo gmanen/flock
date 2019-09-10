@@ -13,7 +13,10 @@ class Boid extends Motile {
         this.fov = 8 * PI / 10
 
         this.angle = radians(135)
-        this.radius = 15
+    }
+
+    radius() {
+        return 15
     }
 
     flock(qtree) {
@@ -26,24 +29,16 @@ class Boid extends Motile {
         const alignment = createVector()
         let alignmentTotal = 0
 
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.alignPerceptionRadius))
-
-        for (let point of points) {
-            let other = point.data.boid
-            let otherPosition = point.data.position
-            let otherVelocity = point.data.velocity
-
-            if (other === this) {
+        for (const point of qtree.query(new Circle(this.position.x, this.position.y, this.alignPerceptionRadius))) {
+            if (point.data.boid === this) {
                 continue
             }
 
-            let diff = p5.Vector.sub(this.position, otherPosition)
-
-            if (this.velocity.angleBetween(diff) > this.fov) {
+            if (this.velocity.angleBetween(p5.Vector.sub(this.position, point.data.position)) > this.fov) {
                 continue
             }
 
-            alignment.add(otherVelocity)
+            alignment.add(point.data.velocity)
             alignmentTotal++
         }
 
@@ -60,19 +55,14 @@ class Boid extends Motile {
         const cohesion = createVector()
         let cohesionTotal = 0
 
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.cohesionPerceptionRadius))
-
-        for (let point of points) {
-            let other = point.data.boid
-            let otherPosition = point.data.position
-
-            if (other === this) {
+        for (let point of qtree.query(new Circle(this.position.x, this.position.y, this.cohesionPerceptionRadius))) {
+            if (point.data.boid === this) {
                 continue
             }
 
-            let diff = p5.Vector.sub(this.position, otherPosition)
+            const otherPosition = point.data.position
 
-            if (this.velocity.angleBetween(diff) > this.fov) {
+            if (this.velocity.angleBetween(p5.Vector.sub(this.position, otherPosition)) > this.fov) {
                 continue
             }
 
@@ -94,34 +84,27 @@ class Boid extends Motile {
         const separation = createVector()
         let separationTotal = 0
 
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.separationPerceptionRadius))
-
-        for (let point of points) {
-            let other = point.data.boid
-            let otherPosition = point.data.position
-
-            if (other === this) {
+        for (let point of qtree.query(new Circle(this.position.x, this.position.y, this.separationPerceptionRadius))) {
+            if (point.data.boid === this) {
                 continue
             }
 
-            let diff = p5.Vector.sub(this.position, otherPosition)
+            const otherPosition = point.data.position
+            const diff = p5.Vector.sub(this.position, otherPosition)
 
             if (this.velocity.angleBetween(diff) > this.fov) {
                 continue
             }
 
-            let d = dist(this.position.x, this.position.y, otherPosition.x, otherPosition.y)
+            const d = dist(this.position.x, this.position.y, otherPosition.x, otherPosition.y)
+            const dSquared = d * d
 
-            let dSquared = d * d
+            if (0 !== dSquared) {
+                diff.div(dSquared)
+                separation.add(diff)
 
-            if (0 === dSquared) {
-                dSquared = 0.00001
+                separationTotal++
             }
-
-            diff.div(dSquared)
-            separation.add(diff)
-
-            separationTotal++
         }
 
         if (separationTotal > 0) {
@@ -135,11 +118,11 @@ class Boid extends Motile {
 
     poly() {
         const poly = []
-        const head = p5.Vector.fromAngle(this.velocity.heading(), this.radius)
+        const head = p5.Vector.fromAngle(this.velocity.heading(), this.radius())
 
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
         head.rotate(this.angle)
-        head.setMag(this.radius / 2)
+        head.setMag(this.radius() / 2)
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
         head.rotate(-2 * this.angle)
         poly.push(createVector(this.position.x + head.x, this.position.y + head.y))
@@ -152,9 +135,11 @@ class Boid extends Motile {
         stroke(255)
         fill(255)
         beginShape(TRIANGLES)
-        for (let point of this.poly()) {
+
+        for (const point of this.poly()) {
             vertex(point.x, point.y)
         }
+
         endShape(CLOSE)
     }
 }

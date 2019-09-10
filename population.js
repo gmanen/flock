@@ -68,7 +68,7 @@ class Population {
         let maxFitness = 0
 
         for (let individual of group) {
-            let fitness  = individual.fitness()
+            const fitness  = individual.fitness()
 
             sumFitness += fitness
 
@@ -77,12 +77,12 @@ class Population {
         }
 
         if (debug) {
-            console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+ maxFitness + ', min fitness = '+minFitness+')')
+            console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+Math.pow(maxFitness, 1/4).toFixed(2)+', min fitness = '+Math.pow(minFitness, 1/4).toFixed(2)+')')
         }
 
         for (let i = 0; i < number; i++) {
+            const random = Math.random()
             let offset = 0
-            let random = Math.random()
             let selected = null
 
             for (let j = 0; j < group.length && null === selected; j++) {
@@ -94,10 +94,10 @@ class Population {
             }
 
             if (debug) {
-                console.log('Selected fitness '+selected.fitness())
+                console.log('Selected fitness '+Math.pow(selected.fitness().toFixed(2), 1/4))
             }
 
-            let child = selected.reproduce()
+            const child = selected.reproduce()
             child.mutate(this.mutationRate)
 
             this.individuals.push(child)

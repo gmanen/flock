@@ -44,7 +44,7 @@ class Line {
         const intersects = []
 
         for (let i = 0; i < poly.length; i++) {
-            let intersect = this.intersects(new Line(poly[i], poly[(i + 1) % poly.length]))
+            const intersect = this.intersects(new Line(poly[i], poly[(i + 1) % poly.length]))
 
             if (false !== intersect) {
                 intersects.push(intersect)
@@ -139,8 +139,8 @@ class Quadtree {
 
         this.subdivide()
 
-        for (let insertPoint of [...this.points, point]) {
-            for (let region of this.regions) {
+        for (const insertPoint of [...this.points, point]) {
+            for (const region of this.regions) {
                 if (region.insert(insertPoint)) {
                     break
                 }
@@ -176,14 +176,14 @@ class Quadtree {
         let results = []
 
         if (this.subdivided()) {
-            for (let region of this.regions) {
+            for (const region of this.regions) {
                 results = results.concat(region.query(circle))
             }
 
             return results
         }
 
-        for (let point of this.points) {
+        for (const point of this.points) {
             if (circle.contains(point)) {
                 results.push(point)
             }
@@ -200,15 +200,15 @@ class Quadtree {
         let results = []
 
         if (this.subdivided()) {
-            for (let region of this.regions) {
+            for (const region of this.regions) {
                 results = results.concat(region.queryLine(line))
             }
 
             return results
         }
 
-        for (let point of this.points) {
-            let intersectingPoints = line.intersectsPoly(point.poly)
+        for (const point of this.points) {
+            const intersectingPoints = line.intersectsPoly(point.poly)
 
             if (false !== intersectingPoints) {
                 results = results.concat(intersectingPoints)
@@ -222,7 +222,7 @@ class Quadtree {
         let count = 0
 
         if (this.subdivided()) {
-            for (let region of this.regions) {
+            for (const region of this.regions) {
                 count += region.count()
             }
 

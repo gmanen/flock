@@ -7,7 +7,7 @@ class Graveyard {
     getAllCorpses() {
         let allCorpses = []
 
-        for (let species of Object.keys(this.grave)) {
+        for (const species of Object.keys(this.grave)) {
             allCorpses = allCorpses.concat(this.grave[species])
         }
 
