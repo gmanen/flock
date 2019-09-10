@@ -47,7 +47,6 @@ function draw() {
         shoak.eat(qtree)
         shoak.think(qtree)
         shoak.age()
-        shoak.hunger()
         shoak.update()
     }
 
