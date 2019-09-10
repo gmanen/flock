@@ -3,7 +3,7 @@ class Shoak extends Motile {
         super(4, 2, 8, 0.2, 15)
 
         this.fov = 90
-        this.resolution = 0.5
+        this.resolution = 0.5 // Increment step size for the rays simulating the shark's vision
 
         if (!brain) {
             brain = new Brain(this.fov / this.resolution, [15, 15], 2, 'relu')
@@ -12,11 +12,11 @@ class Shoak extends Motile {
 
         this.maxMass = 30
         this.brain = brain
-        this.score = 0
+        this.score = 0 // Age of the shark
         this.color = shoakColor || [random(255), random(255), random(255)]
-        this.sight = []
+        this.sight = [] // Current sight is stored to be displayed
 
-        this.angles = []
+        this.angles = [] // Rotation decisions made by the Neural Net are stored to calculate standard deviation in an effort to weed out those who just turn in circles or just go straight
         this.angleSD = 0
 
         this.flock = new Population(flockSize, 0.001, 0.1, () => new Boid())
@@ -31,7 +31,7 @@ class Shoak extends Motile {
         this.sight = []
         const angleVector = p5.Vector.fromAngle(this.velocity.heading(), 1)
         const maxDist = Math.sqrt(topDownWidth * topDownWidth + sceneHeight * sceneHeight)
-        angleVector.rotate(radians(-this.fov / 2))
+        angleVector.rotate(radians(-this.fov / 2)) // Starting angle for the rays
 
         for (let i = 0; i < this.fov; i += this.resolution) {
             const points = qtree.queryLine(new Line(this.position, createVector(this.position.x + angleVector.x, this.position.y + angleVector.y)))
@@ -63,7 +63,12 @@ class Shoak extends Motile {
 
             const distance = Infinity === closest ? maxDist : closest
 
+            /*
+             * Input for the shark's Neural Net, for each ray the distance to the closest fish is a value from 0 to 1
+             * The closest fishes will have a value closer to 1, furthest a value closer to 0
+             */
             sight.push(map(distance, 0, maxDist, 1, 0, true))
+            // -1 means no fish interesects that ray so nothing should be displayed in the POV scene
             this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
 
             angleVector.rotate(radians(this.resolution))
@@ -80,6 +85,10 @@ class Shoak extends Motile {
         const mag = constrain(result[0], this.minSpeed, this.maxSpeed)
         const direction = constrain(result[1], -PI/12, PI/12)
 
+        /*
+         * Calculates the standard deviation for the rotation decisions of the shark in order to weed out those for which the ouptputs of the Neural Net are always the same whataver the input
+         * Currently only doing this for the first 200 frames of the shark's life to reduce computing load
+         */
         if (this.score < 200) {
             this.angles.push(degrees(direction))
             const mean = this.angles.reduce((sum, value) => {return sum + value}, 0) / this.angles.length
@@ -87,9 +96,7 @@ class Shoak extends Motile {
         }
 
         this.velocity.rotate(direction)
-        const force = p5.Vector.fromAngle(this.velocity, mag)
-
-        this.applyForce(force)
+        this.applyForce(p5.Vector.fromAngle(this.velocity, mag))
 
         if (debug) {
             const computed = p5.Vector.fromAngle(this.velocity.heading(), 100)
@@ -123,6 +130,7 @@ class Shoak extends Motile {
     hunger() {
         this.mass -= 0.02
 
+        // After 100 cycles of life, if the output of the Neural Net is constant and the shark keeps turning in a circle or just goes straight, accelerate it's death
         if (this.score > 100 && this.angleSD < 5) {
             this.mass -= 1
         }
@@ -137,7 +145,8 @@ class Shoak extends Motile {
     }
 
     fitness() {
-        const sd = map(this.angleSD, 0, 3, 0, 1, true)
+        // If the standard deviation of the rotation decisions of the Neural Net is below a certain value, reduce drastically the shark fitness to reduce its chances to be selected for reproduction
+        const sd = map(this.angleSD, 0, 5, 0, 1, true)
 
         return Math.pow(this.score * sd + 1, 4)
     }
