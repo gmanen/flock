@@ -19,7 +19,7 @@ class Shoak extends Motile {
         const sight = []
         this.sight = []
         const angleVector = p5.Vector.fromAngle(this.velocity.heading(), 1)
-        const maxDist = Math.sqrt(topDownWidth * topDownWidth + topDownHeight * topDownHeight)
+        const maxDist = Math.sqrt(sceneWidth * sceneWidth + topDownHeight * topDownHeight)
         angleVector.rotate(radians(-this.fov / 2))
 
         for (let i = 0; i < this.fov; i += this.resolution) {
@@ -38,7 +38,7 @@ class Shoak extends Motile {
             }
 
             if (debug) {
-                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? topDownWidth : closest)
+                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? sceneWidth : closest)
                 stroke(255, 255, 255, 20)
                 strokeWeight(2)
                 line(this.position.x, this.position.y, this.position.x + drawRay.x, this.position.y + drawRay.y)
@@ -53,7 +53,7 @@ class Shoak extends Motile {
 
             let distance = Infinity === closest ? maxDist : closest
 
-            sight.push(1 - distance / maxDist)
+            sight.push(map(distance, 0, perceptionRadius, 1, 0, true))
 
             this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
             angleVector.rotate(radians(this.resolution))

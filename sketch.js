@@ -1,29 +1,25 @@
-const debug = false
-const flockSize = 150
+const debug = true
+const frenzySize = debug ? 1 : 10
+const frenzy = new Population(frenzySize, 0.0005, 0.5, () => new Shoak())
+const flockSize = debug ? 150 : frenzySize * 40
 const flock = new Population(flockSize, 0.001, 0.1, () => new Boid())
-const frenzySize = debug ? 1 : 1
-const frenzy = new Population(frenzySize, 0.0005, 0.5, () => {const shoak = new Shoak(); shoak.brain.randomize(); return shoak;})
 const padding = 25
-const topDownWidth = 1200
-const topDownHeight = 900
-const povWidth = 1200
-const povHeight = 100
+const sceneWidth = 1600
+const topDownHeight = 600
+const povHeight = 400
+const perceptionRadius = 500
 
 function setup() {
-    createCanvas(topDownWidth, topDownHeight + povHeight);
+    createCanvas(sceneWidth, topDownHeight + povHeight);
 
     flock.populate()
     frenzy.populate()
 }
 
 function draw() {
-    if (debug) {
-        noLoop()
-    }
-
     background(20);
 
-    let qtree = new Quadtree(topDownWidth / 2, topDownHeight / 2, topDownWidth / 2, topDownHeight / 2, flockSize / 40)
+    let qtree = new Quadtree(sceneWidth / 2, topDownHeight / 2, sceneWidth / 2, topDownHeight / 2, flockSize / 40)
 
     flock.populate()
 
@@ -39,17 +35,17 @@ function draw() {
         }))
 
         boid.flock(qtree)
-        boid.bind(padding, topDownWidth - padding, padding, topDownHeight - padding)
+        boid.bind(padding, sceneWidth - padding, padding, topDownHeight - padding)
     }
 
     for (let shoak of frenzy.population()) {
-        shoak.bind(padding, topDownWidth - padding, padding, topDownHeight - padding)
+        shoak.bind(padding, sceneWidth - padding, padding, topDownHeight - padding)
         shoak.eat(qtree)
         shoak.think(qtree)
         shoak.age()
     }
 
-    frenzy.reproduce()
+    //frenzy.reproduce()
     frenzy.hunger()
 
     for (let boid of flock.population()) {
@@ -76,9 +72,9 @@ function draw() {
     text('Frame rate: ' + Math.round(frameRate()), 0, topDownHeight - 60)
 
     if (frenzy.aliveBest) {
-        const maxDist = Math.sqrt(topDownWidth * topDownWidth + topDownHeight * topDownHeight)
-        const w = povWidth / frenzy.aliveBest.sight.length
-        const maxDistSquared = maxDist * maxDist
+        const maxDist = Math.sqrt(sceneWidth * sceneWidth + topDownHeight * topDownHeight)
+        const w = sceneWidth / frenzy.aliveBest.sight.length
+        const maxDistSquared = 900 * 900
 
         push()
         translate(0, topDownHeight)
@@ -87,8 +83,8 @@ function draw() {
 
             if (distance >= 0) {
                 let distanceSquared = distance * distance
-                let b = map(distanceSquared, 0, maxDistSquared, 255, 0)
-                let h = map(distance, 0, maxDist, povHeight, 0, true)
+                let b = map(distanceSquared, 0, maxDistSquared, 255, 0, true)
+                let h = map(distance, 0, perceptionRadius, povHeight, 0, true)
 
                 noStroke()
                 fill(b)

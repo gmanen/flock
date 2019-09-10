@@ -28,7 +28,7 @@ class Brain {
 
             for (let i = 0; i < shape[0]; i++) {
                 for (let j = 0; j < shape[1]; j++) {
-                    weights.set(i, j, randomGaussian())
+                    weights.set(i, j, randomGaussian(0, 1 / Math.sqrt(shape[1])))
                 }
             }
         }
@@ -36,9 +36,7 @@ class Brain {
 
     evaluate(inputArray) {
         for (let i = 0; i < this.weights.length; i++) {
-            let weightedSumBiased = nj.dot(this.weights[i], inputArray).add(this.biases[i])
-
-            inputArray = nj.sigmoid(weightedSumBiased)
+            inputArray = nj.sigmoid(nj.add(nj.dot(this.weights[i], inputArray), this.biases[i]))
         }
 
         return inputArray.tolist()
@@ -57,21 +55,11 @@ class Brain {
     }
 
     mutate(rate) {
-        for (let biases of this.biases) {
-            for (let i = 0; i < biases.tolist().length; i++) {
+        for (let i = 0; i < this.biases.length; i++) {
+            for (let j = 0; j < this.biases[i].tolist().length; j++) {
                 if (Math.random() < rate) {
-                    biases.set(i, biases.get(i) + random(-0.1, 0.1))
-                }
-            }
-        }
-
-        for (let weights of this.weights) {
-            let shape = weights.shape
-
-            for (let i = 0; i < shape[0]; i++) {
-                for (let j = 0; j < shape[1]; j++) {
-                    if (Math.random() < rate) {
-                        weights.set(i, j, weights.get(i, j) + random(-0.1, 0.1))
+                    for (let w = 0; w < this.weights[i].tolist()[j].length; w++) {
+                        this.weights[i].set(j, w, this.weights[i].get(j, w) + randomGaussian(0, 1 / Math.sqrt(this.weights[i].shape[1])))
                     }
                 }
             }

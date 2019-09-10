@@ -1,14 +1,14 @@
 class Graveyard {
     constructor(sizePerSpecies) {
         this.sizePerSpecies = sizePerSpecies
-        this.ground = {}
+        this.grave = {}
     }
 
     getAllCorpses() {
         let allCorpses = []
 
-        for (let species of Object.keys(this.ground)) {
-            allCorpses = allCorpses.concat(this.ground[species])
+        for (let species of Object.keys(this.grave)) {
+            allCorpses = allCorpses.concat(this.grave[species])
         }
 
         return allCorpses
@@ -17,28 +17,28 @@ class Graveyard {
     addCorpse(corpse) {
         const corpseSpecies = corpse.species() || 'species'
 
-        if (!this.ground.hasOwnProperty(corpseSpecies)) {
-            this.ground[corpseSpecies] = []
+        if (!this.grave.hasOwnProperty(corpseSpecies)) {
+            this.grave[corpseSpecies] = []
         }
 
-        if (this.ground[corpseSpecies].length < this.sizePerSpecies) {
-            this.ground[corpseSpecies].push(corpse)
+        if (this.grave[corpseSpecies].length < this.sizePerSpecies) {
+            this.grave[corpseSpecies].push(corpse)
 
             return
         }
 
         const currentMinFitnessIndex = this.getIndexMinFitness(corpseSpecies)
 
-        if (corpse.fitness() > this.ground[corpseSpecies][currentMinFitnessIndex].fitness()) {
-            this.ground[corpseSpecies][currentMinFitnessIndex] = corpse
+        if (corpse.fitness() > this.grave[corpseSpecies][currentMinFitnessIndex].fitness()) {
+            this.grave[corpseSpecies][currentMinFitnessIndex] = corpse
         }
     }
 
     getIndexMinFitness(species) {
         let minFitnessIndex = 0
 
-        for (let i = 1; i < this.ground[species].length; i++) {
-            if (this.ground[species][i].fitness() < this.ground[species][minFitnessIndex].fitness()) {
+        for (let i = 1; i < this.grave[species].length; i++) {
+            if (this.grave[species][i].fitness() < this.grave[species][minFitnessIndex].fitness()) {
                 minFitnessIndex = i
             }
         }
