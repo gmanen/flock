@@ -46,7 +46,7 @@ class Brain {
         const brain = new Brain()
 
         for (let vector of this.biases) {
-            brain.biases = vector.clone()
+            brain.biases.push(vector.clone())
         }
 
         for (let matrix of this.weights) {
@@ -55,14 +55,37 @@ class Brain {
     }
 
     mutate(rate) {
+        let mutations = []
+        if (debug) {
+            console.log('Start mutation with rate '+rate)
+        }
+
         for (let i = 0; i < this.biases.length; i++) {
             for (let j = 0; j < this.biases[i].tolist().length; j++) {
-                if (Math.random() < rate) {
+                if (random() < rate) {
+                    mutations.push({'layer': i, mutations: []})
                     for (let w = 0; w < this.weights[i].tolist()[j].length; w++) {
-                        this.weights[i].set(j, w, this.weights[i].get(j, w) + randomGaussian(0, 1 / Math.sqrt(this.weights[i].shape[1])))
+                        const currentValue = this.weights[i].get(j, w)
+                        const mutation = randomGaussian(0, 1 / Math.sqrt(this.weights[i].shape[1]))
+
+                        this.weights[i].set(j, w, currentValue + mutation)
+
+                        if (debug) {
+                            mutations[mutations.length - 1].mutations.push({
+                                'weightIndices': [j, w],
+                                'currentValue': currentValue,
+                                'mutation': mutation,
+                                'newValue': this.weights[i].get(j, w)
+                            })
+                        }
                     }
                 }
             }
+        }
+
+        if (debug) {
+            console.log(mutations)
+            console.log('End mutation')
         }
     }
 }

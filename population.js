@@ -64,9 +64,20 @@ class Population {
 
     select(number, group) {
         let sumFitness = 0
+        let minFitness = Infinity
+        let maxFitness = 0
 
         for (let individual of group) {
-            sumFitness += individual.fitness()
+            let fitness  = individual.fitness()
+
+            sumFitness += fitness
+
+            if (fitness < minFitness) minFitness = fitness
+            if (fitness > maxFitness) maxFitness = fitness
+        }
+
+        if (debug) {
+            console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+ maxFitness + ', min fitness = '+minFitness+')')
         }
 
         for (let i = 0; i < number; i++) {
@@ -80,6 +91,10 @@ class Population {
                 if (random <= offset) {
                     selected = group[j]
                 }
+            }
+
+            if (debug) {
+                console.log('Selected fitness '+selected.fitness())
             }
 
             let child = selected.reproduce()

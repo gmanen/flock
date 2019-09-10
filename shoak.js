@@ -2,10 +2,16 @@ class Shoak extends Motile {
     constructor(brain, shoakColor) {
         super(4, 2, 8, 0.2, 15)
 
-        this.maxMass = 30
         this.fov = 90
         this.resolution = 0.5
-        this.brain = brain || new Brain(this.fov / this.resolution, [15, 15], 2)
+
+        if (!brain) {
+            brain = new Brain(this.fov / this.resolution, [15, 15], 2)
+            brain.randomize()
+        }
+
+        this.maxMass = 30
+        this.brain = brain
         this.score = 0
         this.color = shoakColor || [random(255), random(255), random(255)]
         this.sight = []

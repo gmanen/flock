@@ -1,6 +1,8 @@
-const debug = true
+const urlParams = new URLSearchParams(window.location.search);
+
+const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
 const frenzySize = debug ? 1 : 10
-const frenzy = new Population(frenzySize, 0.0005, 0.5, () => new Shoak())
+const frenzy = new Population(frenzySize, 0.0005, 0.2, () => new Shoak())
 const flockSize = debug ? 150 : frenzySize * 40
 const flock = new Population(flockSize, 0.001, 0.1, () => new Boid())
 const padding = 25
