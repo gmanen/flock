@@ -107,11 +107,11 @@ class Shoak extends Motile {
     }
 
     eat(qtree) {
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 15))
+        const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 10))
 
         for (const point of points) {
             this.flock.population().splice(this.flock.population().indexOf(point.data.boid), 1)
-            this.mass = constrain(this.mass + 1, 0, this.maxMass)
+            this.mass = constrain(this.mass + point.data.boid.mass, 0, this.maxMass)
         }
     }
 
@@ -128,7 +128,7 @@ class Shoak extends Motile {
     }
 
     hunger() {
-        this.mass -= 0.02
+        this.mass -= 0.05
 
         // After 100 cycles of life, if the output of the Neural Net is constant and the shark keeps turning in a circle or just goes straight, accelerate it's death
         if (this.score > 100 && this.angleSD < 5) {

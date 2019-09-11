@@ -1,6 +1,6 @@
 class Boid extends Motile {
     constructor() {
-        super(4, 2, 8, 0.2)
+        super(4, 2, 8, 0.2, random(0.5, 1.5))
 
         this.alignPerceptionRadius = 60
         this.cohesionPerceptionRadius = 75
@@ -16,7 +16,7 @@ class Boid extends Motile {
     }
 
     radius() {
-        return 15
+        return 10 * this.mass
     }
 
     flock(qtree) {

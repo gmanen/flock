@@ -2,7 +2,7 @@ const urlParams = new URLSearchParams(window.location.search);
 
 const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
 const frenzySize = debug ? 1 : 30
-const flockSize = 10 // Number of fishes for each shark's aquarium
+const flockSize = 15 // Number of fishes for each shark's aquarium
 const frenzy = new Population(frenzySize, 0.0005, 0.2, () => new Shoak())
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
 const topDownWidth = 600
@@ -10,7 +10,8 @@ const povWidth = 600
 const sceneHeight = 400
 
 function setup() {
-    createCanvas(topDownWidth + povWidth, sceneHeight);
+    const canvas = createCanvas(topDownWidth + povWidth, sceneHeight);
+    canvas.parent('sketch');
 
     frenzy.populate()
 }
@@ -58,11 +59,11 @@ function draw() {
     strokeWeight(1)
     stroke(255)
     fill(255)
-    text('Generation: ' + frenzy.generation, 0, sceneHeight)
-    text('Alive best: ' + Math.pow((frenzy.aliveBest ? frenzy.aliveBest.fitness() : 0), 1 / 4).toFixed(2), 0, sceneHeight - 15)
-    text('Current best: ' + Math.pow(frenzy.currentBest, 1 / 4).toFixed(2), 0, sceneHeight - 30)
-    text('All time best: ' + Math.pow(frenzy.allTimeBest, 1 / 4).toFixed(2), 0, sceneHeight - 45)
-    text('Frame rate: ' + Math.round(frameRate()), 0, sceneHeight - 60)
+    text('Generation: ' + frenzy.generation, 5, sceneHeight - 5)
+    text('Alive best: ' + Math.pow((frenzy.aliveBest ? frenzy.aliveBest.fitness() : 0), 1 / 4).toFixed(2) + ' (' + frenzy.population().length + ' alive)', 5, sceneHeight - 20)
+    text('Current best: ' + Math.pow(frenzy.currentBest, 1 / 4).toFixed(2), 5, sceneHeight - 35)
+    text('All time best: ' + Math.pow(frenzy.allTimeBest, 1 / 4).toFixed(2), 5, sceneHeight - 50)
+    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 65)
 
     // Only draw the best currently alive shark
     if (frenzy.aliveBest) {
