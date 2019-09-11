@@ -2,7 +2,7 @@ const urlParams = new URLSearchParams(window.location.search);
 
 const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
 const frenzySize = debug ? 1 : 30
-const flockSize = 15 // Number of fishes for each shark's aquarium
+const schoolSize = 15 // Number of fishes for each shark's aquarium
 const frenzy = new Population(frenzySize, 0.0005, 0.2, () => new Shoak())
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
 const topDownWidth = 600
@@ -26,24 +26,24 @@ function draw() {
     for (const shoak of frenzy.population()) {
         shoak.qtree = new Quadtree(topDownWidth / 2, sceneHeight / 2, topDownWidth / 2, sceneHeight / 2, 2)
         const qtree = shoak.qtree
-        const flock = shoak.flock
+        const school = shoak.school
 
         // If any fish has been eaten, respawn them
-        flock.populate()
+        school.populate()
 
         // @TODO Instead of resetting the qtree every frame, try to update the positions of the points and see if it has a positive impact on performance
-        for (const boid of flock.population()) {
-            qtree.insert(new Point(boid.position.x, boid.position.y, boid.poly(), {
-                "boid": boid,
-                "position": new p5.Vector(boid.position.x, boid.position.y),
-                "velocity": new p5.Vector(boid.velocity.x, boid.velocity.y)
+        for (const foish of school.population()) {
+            qtree.insert(new Point(foish.position.x, foish.position.y, foish.poly(), {
+                "foish": foish,
+                "position": new p5.Vector(foish.position.x, foish.position.y),
+                "velocity": new p5.Vector(foish.velocity.x, foish.velocity.y)
             }))
         }
 
-        for (const boid of flock.population()) {
-            boid.flock(qtree)
-            boid.bind(padding, topDownWidth - padding, padding, sceneHeight - padding)
-            boid.update()
+        for (const foish of school.population()) {
+            foish.school(qtree)
+            foish.bind(padding, topDownWidth - padding, padding, sceneHeight - padding)
+            foish.update()
         }
 
         shoak.bind(padding, topDownWidth - padding, padding, sceneHeight - padding)
@@ -72,8 +72,8 @@ function draw() {
         // Drawing the top down scene
         shoak.show()
 
-        for (const boid of shoak.flock.population()) {
-            boid.show()
+        for (const foish of shoak.school.population()) {
+            foish.show()
         }
 
         if (debug) {

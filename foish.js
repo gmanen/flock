@@ -1,4 +1,4 @@
-class Boid extends Motile {
+class foish extends Motile {
     constructor() {
         super(4, 2, 8, 0.2, random(0.5, 1.5))
 
@@ -19,7 +19,7 @@ class Boid extends Motile {
         return 10 * this.mass
     }
 
-    flock(qtree) {
+    school(qtree) {
         this.steer(this.align(qtree))
         this.steer(this.cohesion(qtree))
         this.steer(this.separation(qtree))
@@ -30,7 +30,7 @@ class Boid extends Motile {
         let alignmentTotal = 0
 
         for (const point of qtree.query(new Circle(this.position.x, this.position.y, this.alignPerceptionRadius))) {
-            if (point.data.boid === this) {
+            if (point.data.foish === this) {
                 continue
             }
 
@@ -56,7 +56,7 @@ class Boid extends Motile {
         let cohesionTotal = 0
 
         for (let point of qtree.query(new Circle(this.position.x, this.position.y, this.cohesionPerceptionRadius))) {
-            if (point.data.boid === this) {
+            if (point.data.foish === this) {
                 continue
             }
 
@@ -85,7 +85,7 @@ class Boid extends Motile {
         let separationTotal = 0
 
         for (let point of qtree.query(new Circle(this.position.x, this.position.y, this.separationPerceptionRadius))) {
-            if (point.data.boid === this) {
+            if (point.data.foish === this) {
                 continue
             }
 

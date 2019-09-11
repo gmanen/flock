@@ -19,7 +19,7 @@ class Shoak extends Motile {
         this.angles = [] // Rotation decisions made by the Neural Net are stored to calculate standard deviation in an effort to weed out those who just turn in circles or just go straight
         this.angleSD = 0
 
-        this.flock = new Population(flockSize, 0.001, 0.1, () => new Boid())
+        this.school = new Population(schoolSize, 0.001, 0.1, () => new foish())
     }
 
     radius() {
@@ -110,8 +110,8 @@ class Shoak extends Motile {
         const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 10))
 
         for (const point of points) {
-            this.flock.population().splice(this.flock.population().indexOf(point.data.boid), 1)
-            this.mass = constrain(this.mass + point.data.boid.mass, 0, this.maxMass)
+            this.school.population().splice(this.school.population().indexOf(point.data.foish), 1)
+            this.mass = constrain(this.mass + point.data.foish.mass, 0, this.maxMass)
         }
     }
 
