@@ -4,7 +4,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <meta charset="utf-8">
 </head>
@@ -12,7 +13,75 @@
 <div class="container">
     <h1>Shoaks</h1>
     <p class="lead">Building an ecosystem with AI-piloted preys and predators</p>
-    <div id="sketch"></div>
+    <div class="mt-2 mb-2" id="sketch"></div>
+    <h2>How it works</h2>
+    <p>On the left, you can see a top-down view of an environment where a simulation of a shark (the circle) and a
+        school of fish (the triangles) evolve. On the right is a representation of the first person point of view of the
+        shark. There are actually 30 "fish bowls" running in parallel, only the one featuring the best shark is draw. At
+        the start and when a new generation is born, the view may flicker a lot as it switches between the different
+        sharks in the population before one of them takes the lead.</p>
+    <p>
+        The fishes are currently moving randomly, only following a flocking algorithm. They try to align with each other
+        and group themselves. There is no AI behind their movement.<br>
+        The shark is piloted by an AI, that is a basic artificial neural network, a digital brain. The neural network
+        chooses a direction towards which to turn and how much it wants to move forward in that direction. It makes
+        those decisions according to what it can see - what is represented on the right side of the scene.</p>
+    <p>Both the shark and the fishes have a mass. The shark loses mass every frame and has to eat the fishes in order to
+        gain mass. If the shark's mass goes down to 0, it dies. The mass is represented visually by the size of the
+        sharks / fishes. The more massive sharks are, the easier it is for them to eat fishes (they have a bigger eating
+        range), but the slower they move. Same goes for the fishes, the smaller, less massive ones are faster (and are
+        not as nutritious for the shark).</p>
+    <p>The sharks learn via a genetic evolution algorithm. When all of the sharks are dead, a new generation is born,
+        evolved from the best performing shark of the previous generation. The evolution consists of mutating the neural
+        network of the sharks who are selected for reproduction.<br>
+        The sharks are selected for reproduction randomly, those who lived longer (were more apt at eating fishes) are
+        more likely to be selected. Currently, the reproduction is asexual: an individual chosen for reproduction clones
+        itself and the resulting child is mutated to form a new individual for the next generation.</p>
+    <h2>Going forward</h2>
+    <p>There is still a lot to do with this mini project, including</p>
+    <ul>
+        <li>Allow some of the parameters to be customizable</li>
+        <li>Give the fishes a neural network and try to have them learn to avoid the sharks</li>
+        <li>Have all the sharks and the fishes be in the same environment</li>
+        <li>Try and incentivize the sharks to work together</li>
+        <li>Add currents forcing movement on the sharks and fishes</li>
+        <li>Add obstacles in the environment, providing fishes a way to maybe hide from the sharks</li>
+        <li>Currently the sharks have no memory, all decisions taken by the neural net are based on the information
+            gathered from the current frame only. Give the sharks memory would maybe allow them to see patterns in the
+            fish movements
+        </li>
+        <li>Go 3D</li>
+    </ul>
+    <h2>Thanks</h2>
+    <p>This project is based on the excellent videos of Daniel Shiffman and his youtube channel
+        <a target="_blank" href="https://www.youtube.com/user/shiffman">Coding Train</a> which I recommend you check
+        out. He has a lot of very good and interesting content.</p>
+    <p>The flocking algorithm is based on Craig Reynolds "<a target="_blank" href="https://www.red3d.com/cwr/boids/">boids</a>"
+        algorithm.</p>
+    <p>Some optimizations for the mutation algorithm were made thanks to a paper by David Montana on neural network
+        weight selmection using genetic algorithm found <a target="_blank"
+                                                           href="http://davidmontana.net/papers/hybrid.pdf">here</a></p>
+    <h2>On the technical side</h2>
+    <p>The project is made with <a target="_blank" href="https://p5js.org/">p5.js.</a><br>
+        Code is available on github: <a target="_blank" href="https://github.com/gmanen/shoaks">https://github.com/gmanen/shoaks</a>
+    </p>
+    <p>Originally the sharks and fishes were all in the same environment but it was much harder to find a good balance
+        for the hyper parameters (how many fishes and sharks should there be in what area, how quickly the sharks lose
+        and gain mass, the mutation rate, the neural net parameters etc.).</p>
+    <p>The first try at a neural net for the sharks was a simple feed forward with a sigmoid activation function. It did
+        not work well at all, most sharks ended up going in a circle (always choosing the same rotation angle). Changing
+        the activation function for ReLU was a big improvement on their learning capacity, which retrospectively makes
+        sense as sigmoid-ish activation functions seem to be more useful for classification problem whereas the rotation
+        decision is continuous.</p>
+    <p>The neural network is developed from scratch and I'd like to keep it that way as I use this mini project to learn
+        more about neural nets and machine learning in general. At some point in the future I would like to make it more
+        complex.</p>
+    <p>Currently the sharks see in black and white, and only fishes. I'd like to add colours which would be a way to
+        have them see other sharks, obstacles, walls and such as well as fishes. It probably requires a more complex
+        neural net though.</p>
+    <p>At the moment the reproduction is purely asexual (clone and mutation). I intend to implement crossover and maybe
+        randomly decide for each new individual in the next generation if it's born via asxual or sexual
+        reproduction.</p>
 </div>
 <script src="quadtree.js"></script>
 <script src="graveyard.js"></script>
