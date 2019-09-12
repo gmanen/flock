@@ -32,6 +32,9 @@
                         Shoak population (<span class="shoaks-population-current">30</span>)
                     </label>
                     <input id="shoaks-population-slider" class="custom-range" type="range" min="1" max="50" value="30"/>
+                    <small class="form-text text-muted">
+                        Population size has a significant impact on performance when a new generation starts and all shoaks are alive.
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="shoaks-mutation-rate-slider">
@@ -67,7 +70,7 @@
                     <label for="shoaks-fov-slider">
                         Shoak field of view (<span class="shoaks-fov-current">90</span>°)
                     </label>
-                    <input id="shoaks-fov-slider" class="custom-range" type="range" min="45" max="90"
+                    <input id="shoaks-fov-slider" class="custom-range" type="range" min="45" max="180"
                            step="5" value="90"/>
                 </div>
                 <div class="form-group">
@@ -78,7 +81,8 @@
                            step="0.5" value="0.5"/>
                     <small class="form-text text-muted">
                         Angle between each ray hitting the shoaks' "eye".<br>
-                        Increasing this value reduces the quality of the shoaks' sight.
+                        Increasing this value reduces the quality of the shoaks' sight.<br>
+                        Keeping a low resolution with a wider field of view angle will have a significant impact on performance.
                     </small>
                 </div>
             </div>
@@ -127,8 +131,8 @@
         right-hand side of the scene.
     </p>
     <p>
-        Both the shoak and the fishes have a mass. The shoak loses mass every frame and has to eat the fishes to gain
-        mass. If the shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the shoaks /
+        Both the shoaks and the fishes have a mass. The shoaks loses mass every frame and has to eat the fishes to gain
+        mass. If a shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the shoaks /
         fishes. The more massive shoaks are, the easier it is for them to eat fishes (they have a longer eating range),
         but the slower they move. Same goes for the fishes, the smaller, less massive ones are faster (and are not as
         nutritious for the shoak).
@@ -137,8 +141,8 @@
         The shoaks learn via a genetic evolution algorithm. When all of the shoaks are dead, a new generation is born,
         evolved from the best performing shoak of the previous generation. The evolution consists of mutating the neural
         network of the shoaks who are selected for reproduction.<br>
-        The shoaks are selected for reproduction randomly; those who lived longer (were more apt at eating fishes) are
-        more likely to be selected. Currently, the reproduction is asexual: an individual chosen for reproduction clones
+        The shoaks are selected for reproduction randomly; those who are more efficient at eating fish are
+        more likely to reproduce. Currently, the reproduction is asexual: an individual chosen for reproduction clones
         itself and the resulting child is mutated to form a new individual for the next generation.
     </p>
     <h2>Going forward</h2>

@@ -1,11 +1,11 @@
 // Customizable parameters
 setParameter('displayPov', getParameter('displayPov', true))
 setParameter('frenzySize', getParameter('frenzySize', 30))
-setParameter('shoakMutationRate', getParameter('shoakMutationRate', 20))
-setParameter('shoakHungerRate', getParameter('shoakHungerRate', 0.05))
-setParameter('shoakNNComplexity', getParameter('shoakNNComplexity', 2))
+setParameter('shoakMutationRate', getParameter('shoakMutationRate', 10))
+setParameter('shoakHungerRate', getParameter('shoakHungerRate', 0.08))
+setParameter('shoakNNComplexity', getParameter('shoakNNComplexity', 1))
 setParameter('shoakNNSize', getParameter('shoakNNSize', 12))
-setParameter('shoakPerceptionRadius', getParameter('shoakPerceptionRadius', 200))
+setParameter('shoakPerceptionRadius', getParameter('shoakPerceptionRadius', 300))
 setParameter('shoakFov', getParameter('shoakFov', 90))
 setParameter('shoakResolution', getParameter('shoakResolution', 0.5))
 
@@ -108,7 +108,7 @@ function draw() {
                     fill(b)
                     rectMode(CENTER)
 
-                    rect(i * w + w / 2, sceneHeight / 2, w, h)
+                    rect(i * w + w / 2, sceneHeight / 2, w + 1, h)
                 }
             }
             pop()

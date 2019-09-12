@@ -80,7 +80,7 @@ class Shoak extends Motile {
              * The closest fishes will have a value closer to 1, furthest a value closer to 0
              */
             sight.push(map(distance, 0, this.perceptionRadius, 1, 0, true))
-            // -1 means no fish interesects that ray so nothing should be displayed in the POV scene
+            // -1 means no fish intersects that ray so nothing should be displayed in the POV scene
             this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
 
             angleVector.rotate(radians(this.resolution))
@@ -95,7 +95,7 @@ class Shoak extends Motile {
 
         const result = this.brain.evaluate(sight.concat([1 - this.mass / this.maxMass]))
         const mag = constrain(result[0], this.minSpeed, this.maxSpeed)
-        const direction = constrain(result[1], -PI/12, PI/12)
+        const direction = constrain(result[1], -PI / 12, PI / 12)
 
         this.velocity.rotate(direction)
         this.applyForce(p5.Vector.fromAngle(this.velocity, mag))
@@ -113,7 +113,7 @@ class Shoak extends Motile {
 
         for (const point of points) {
             const massGain = Math.min(point.data.foish.mass, this.maxMass - this.mass)
-            
+
             this.mass += massGain
             this.score += massGain
             this.school.population().splice(this.school.population().indexOf(point.data.foish), 1)
