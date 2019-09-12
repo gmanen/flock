@@ -55,7 +55,7 @@ class Shoak extends Motile {
 
             const distance = Infinity === closest || closest > this.perceptionRadius ? this.perceptionRadius : closest
 
-            if (debug) {
+            if (getParameter('debug')) {
                 const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? this.perceptionRadius : closest)
 
                 stroke(255, 255, 255, 20)
@@ -86,7 +86,7 @@ class Shoak extends Motile {
             angleVector.rotate(radians(this.resolution))
         }
 
-        if (debug) {
+        if (getParameter('debug')) {
             const velocity = p5.Vector.fromAngle(this.velocity.heading(), 100)
             stroke(0, 0, 255)
             strokeWeight(2)
@@ -100,7 +100,7 @@ class Shoak extends Motile {
         this.velocity.rotate(direction)
         this.applyForce(p5.Vector.fromAngle(this.velocity, mag))
 
-        if (debug) {
+        if (getParameter('debug')) {
             const computed = p5.Vector.fromAngle(this.velocity.heading(), 100)
             stroke(255, 0, 0)
             strokeWeight(2)
@@ -113,15 +113,10 @@ class Shoak extends Motile {
 
         for (const point of points) {
             const massGain = Math.min(point.data.foish.mass, this.maxMass - this.mass)
-
-
+            
             this.mass += massGain
             this.score += massGain
             this.school.population().splice(this.school.population().indexOf(point.data.foish), 1)
-        }
-
-        if (this.score > frenzy.currentBest) {
-            frenzy.currentBest = this.score
         }
 
         if (this.score > frenzy.allTimeBest) {
@@ -151,7 +146,7 @@ class Shoak extends Motile {
 
     show() {
         stroke(255)
-        fill(this.color[0], this.color[1], this.color[2], map(this.score / frenzy.currentBest, 0, 1, 50, 255))
+        fill(this.color[0], this.color[1], this.color[2], map(null === frenzy.aliveBest || 0 === frenzy.aliveBest.score ? 1 : this.score / frenzy.aliveBest.score, 0, 1, 50, 255))
         circle(this.position.x, this.position.y, this.radius() * 2)
     }
 }

@@ -68,7 +68,7 @@ class Brain {
     mutate(rate) {
         const mutations = []
 
-        if (debug) {
+        if (getParameter('debug')) {
             console.log('Start mutation with rate '+rate)
         }
 
@@ -82,7 +82,7 @@ class Brain {
 
                         this.weights[i].set(j, w, currentValue + mutation)
 
-                        if (debug) {
+                        if (getParameter('debug')) {
                             mutations[mutations.length - 1].mutations.push({
                                 'weightIndices': [j, w],
                                 'currentValue': currentValue,
@@ -95,7 +95,7 @@ class Brain {
             }
         }
 
-        if (debug) {
+        if (getParameter('debug')) {
             console.log(mutations)
             console.log('End mutation')
         }

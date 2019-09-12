@@ -1,6 +1,3 @@
-const urlParams = new URLSearchParams(window.location.search);
-const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
-
 // Customizable parameters
 setParameter('displayPov', getParameter('displayPov', true))
 setParameter('frenzySize', getParameter('frenzySize', 30))
@@ -86,7 +83,7 @@ function draw() {
             foish.show()
         }
 
-        if (debug) {
+        if (getParameter('debug')) {
             shoak.qtree.show()
         }
 
@@ -120,7 +117,7 @@ function draw() {
 }
 
 function init() {
-    frenzy = new Population(debug ? 1 : parseInt(getParameter('frenzySize')), 0.0005, parseFloat(getParameter('shoakMutationRate')) / 100, () => new Shoak())
+    frenzy = new Population(this.getParameter('debug') ? 1 : parseInt(getParameter('frenzySize')), 0.0005, parseFloat(getParameter('shoakMutationRate')) / 100, () => new Shoak())
     frenzy.populate()
 }
 
@@ -150,6 +147,8 @@ function setParameter(name, value) {
     document.getElementById('sketch').style.width = (currentDisplayPov ? topDownWidth + povWidth : topDownWidth) + 'px'
     document.getElementById('display-pov').checked = currentDisplayPov
 
+    document.getElementById('debug').checked = getParameter('debug')
+
     document.getElementById('display-pov').addEventListener('change', (event) => {
         const newWidth = event.target.checked ? topDownWidth + povWidth : topDownWidth
 
@@ -157,6 +156,13 @@ function setParameter(name, value) {
         resizeCanvas(newWidth, sceneHeight)
 
         document.getElementById('sketch').style.width = newWidth + 'px'
+    })
+
+    document.getElementById('debug').addEventListener('change', (event) => {
+        setParameter('debug', event.target.checked)
+        document.getElementById('shoaks-population-slider').disabled = event.target.checked
+
+        init()
     })
 
     for (const slider of sliders) {

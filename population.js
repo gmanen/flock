@@ -7,7 +7,6 @@ class Population {
 
         this.individuals = []
         this.graveyard = new Graveyard(5)
-        this.currentBest = 0
         this.allTimeBest = 0
         this.aliveBest = null
         this.generation = 1
@@ -35,7 +34,6 @@ class Population {
         this.select(this.size, this.graveyard.getAllCorpses())
 
         this.generation++
-        this.currentBest = 0
     }
 
     hunger() {
@@ -76,7 +74,7 @@ class Population {
             if (fitness > maxFitness) maxFitness = fitness
         }
 
-        if (debug) {
+        if (getParameter('debug')) {
             console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+Math.pow(maxFitness, 1/4).toFixed(2)+', min fitness = '+Math.pow(minFitness, 1/4).toFixed(2)+')')
         }
 
@@ -93,7 +91,12 @@ class Population {
                 }
             }
 
-            if (debug) {
+            // If all individuals of the population have a fitness equal to 0 none will be selected
+            if (!selected) {
+                selected = group[0]
+            }
+
+            if (getParameter('debug')) {
                 console.log('Selected fitness '+selected.score.toFixed(2))
             }
 
