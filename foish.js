@@ -1,4 +1,4 @@
-class foish extends Motile {
+class Foish extends Motile {
     constructor() {
         super(4, 2, 8, 0.2, random(0.5, 1.5))
 
@@ -12,7 +12,7 @@ class foish extends Motile {
 
         this.fov = 8 * PI / 10
 
-        this.angle = radians(135)
+        this.angle = 3 * PI / 4
     }
 
     radius() {

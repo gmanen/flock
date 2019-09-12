@@ -1,19 +1,28 @@
 const urlParams = new URLSearchParams(window.location.search);
-
 const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
-const frenzySize = debug ? 1 : 30
+
+// Customizable parameters
+console.log()
+setParameter('displayPov', getParameter('displayPov',true))
+setParameter('frenzySize', getParameter('frenzySize',30))
+setParameter('shoakMutationRate', getParameter('shoakMutationRate',0.2))
+setParameter('shoakHungerRate', getParameter('shoakHungerRate',0.05))
+setParameter('shoakNNComplexity', getParameter('shoakNNComplexity',2))
+setParameter('shoakNNSize', getParameter('shoakNNSize',12))
+
 const schoolSize = 15 // Number of fishes for each shark's aquarium
-const frenzy = new Population(frenzySize, 0.0005, 0.2, () => new Shoak())
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
 const topDownWidth = 600
 const povWidth = 600
 const sceneHeight = 400
 
+let frenzy = null
+
 function setup() {
     const canvas = createCanvas(topDownWidth + povWidth, sceneHeight);
     canvas.parent('sketch');
 
-    frenzy.populate()
+    init()
 }
 
 function draw() {
@@ -84,25 +93,74 @@ function draw() {
         const w = povWidth / frenzy.aliveBest.sight.length
         const maxDistSquared = maxDist * maxDist
 
-        // Drawing the POV scene
-        push()
-        translate(topDownWidth, 0)
-        for (let i = 0; i < frenzy.aliveBest.sight.length; i++) {
-            const distance = frenzy.aliveBest.sight[i]
+        if (getParameter('displayPov')) {
+            // Drawing the POV scene
+            push()
+            translate(topDownWidth, 0)
+            for (let i = 0; i < frenzy.aliveBest.sight.length; i++) {
+                const distance = frenzy.aliveBest.sight[i]
 
-            if (distance >= 0) {
-                // @TODO The POV scene doesn't seem to draw properly, there's probably some optimization to do here
-                const distanceSquared = distance * distance
-                const b = map(distanceSquared, 0, maxDistSquared, 255, 0, true)
-                const h = map(distance, 0, maxDist, sceneHeight, 0, true)
+                if (distance >= 0) {
+                    // @TODO The POV scene doesn't seem to draw properly, there's probably some optimization to do here
+                    const distanceSquared = distance * distance
+                    const b = map(distanceSquared, 0, maxDistSquared, 255, 0, true)
+                    const h = map(distance, 0, maxDist, sceneHeight, 0, true)
 
-                noStroke()
-                fill(b)
-                rectMode(CENTER)
+                    noStroke()
+                    fill(b)
+                    rectMode(CENTER)
 
-                rect(i * w + w / 2, sceneHeight / 2, w, h)
+                    rect(i * w + w / 2, sceneHeight / 2, w, h)
+                }
             }
+            pop()
         }
-        pop()
     }
 }
+
+function init() {
+    frenzy = new Population(debug ? 1 : parseInt(getParameter('frenzySize')), 0.0005, parseFloat(getParameter('shoakMutationRate')), () => new Shoak())
+    frenzy.populate()
+}
+
+function getParameter(name, defaultValue) {
+    return JSON.parse(window.sessionStorage.getItem(name)) || defaultValue || null
+}
+
+function setParameter(name, value) {
+    return window.sessionStorage.setItem(name, JSON.stringify(value))
+}
+
+(function () {
+    const sliders = [
+        {'variableName': 'frenzySize', 'sliderName': 'shoaks-population'},
+        {'variableName': 'shoakMutationRate', 'sliderName': 'shoaks-mutation-rate'},
+        {'variableName': 'shoakHungerRate', 'sliderName': 'shoaks-hunger-rate'},
+        {'variableName': 'shoakNNComplexity', 'sliderName': 'shoaks-nn-complexity'},
+        {'variableName': 'shoakNNSize', 'sliderName': 'shoaks-nn-size'},
+    ]
+
+    document.getElementById('display-pov').addEventListener('change', (event) => {
+        setParameter('displayPov', event.target.checked)
+    })
+
+    for (const slider of sliders) {
+        const currentValue = getParameter(slider.variableName)
+
+        for (const element of document.getElementsByClassName(slider.sliderName+'-current')) {
+            element.innerHTML = currentValue
+        }
+
+        document.getElementById(slider.sliderName+'-slider').value = currentValue
+
+        document.getElementById(slider.sliderName+'-slider').addEventListener('change', (event) => {
+            setParameter(slider.variableName, event.target.value)
+
+            for (const element of document.getElementsByClassName(slider.sliderName+'-current')) {
+                element.innerHTML = event.target.value
+            }
+
+            init()
+        })
+    }
+})()

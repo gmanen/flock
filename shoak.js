@@ -6,7 +6,13 @@ class Shoak extends Motile {
         this.resolution = 0.5 // Increment step size for the rays simulating the shark's vision
 
         if (!brain) {
-            brain = new Brain(this.fov / this.resolution, [15, 15], 2, 'relu')
+            const layers = []
+
+            for (let i = 0; i < parseInt(getParameter('shoakNNComplexity')); i++) {
+                layers.push(parseInt(getParameter('shoakNNSize')))
+            }
+
+            brain = new Brain(this.fov / this.resolution, layers, 2, 'relu')
             brain.randomize()
         }
 
@@ -19,7 +25,7 @@ class Shoak extends Motile {
         this.angles = [] // Rotation decisions made by the Neural Net are stored to calculate standard deviation in an effort to weed out those who just turn in circles or just go straight
         this.angleSD = 0
 
-        this.school = new Population(schoolSize, 0.001, 0.1, () => new foish())
+        this.school = new Population(schoolSize, 0.001, 0.1, () => new Foish())
     }
 
     radius() {
@@ -128,9 +134,9 @@ class Shoak extends Motile {
     }
 
     hunger() {
-        this.mass -= 0.05
+        this.mass -= parseFloat(getParameter('shoakHungerRate'))
 
-        // After 100 cycles of life, if the output of the Neural Net is constant and the shark keeps turning in a circle or just goes straight, accelerate it's death
+        // After 100 cycles of life, if the output of the Neural Net is constant and the shark keeps turning in a circle or just goes straight, accelerate its death
         if (this.score > 100 && this.angleSD < 5) {
             this.mass -= 1
         }
