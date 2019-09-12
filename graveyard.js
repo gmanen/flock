@@ -29,7 +29,7 @@ class Graveyard {
 
         const currentMinFitnessIndex = this.getIndexMinFitness(corpseSpecies)
 
-        if (corpse.fitness() > this.grave[corpseSpecies][currentMinFitnessIndex].fitness()) {
+        if (corpse.score > this.grave[corpseSpecies][currentMinFitnessIndex].score) {
             this.grave[corpseSpecies][currentMinFitnessIndex] = corpse
         }
     }
@@ -38,7 +38,7 @@ class Graveyard {
         let minFitnessIndex = 0
 
         for (let i = 1; i < this.grave[species].length; i++) {
-            if (this.grave[species][i].fitness() < this.grave[species][minFitnessIndex].fitness()) {
+            if (this.grave[species][i].score < this.grave[species][minFitnessIndex].score) {
                 minFitnessIndex = i
             }
         }

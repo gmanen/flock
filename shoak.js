@@ -2,8 +2,9 @@ class Shoak extends Motile {
     constructor(brain, shoakColor) {
         super(4, 2, 8, 0.2, 15)
 
-        this.fov = 90
-        this.resolution = 0.5 // Increment step size for the rays simulating the shark's vision
+        this.fov = parseInt(getParameter('shoakFov'))
+        this.resolution = parseFloat(getParameter('shoakResolution')) // Increment step size for the rays simulating the shark's vision
+        this.perceptionRadius = parseInt(getParameter('shoakPerceptionRadius'))
 
         if (!brain) {
             const layers = []
@@ -12,7 +13,7 @@ class Shoak extends Motile {
                 layers.push(parseInt(getParameter('shoakNNSize')))
             }
 
-            brain = new Brain(this.fov / this.resolution, layers, 2, 'relu')
+            brain = new Brain(this.fov / this.resolution + 1, layers, 2, 'relu')
             brain.randomize()
         }
 
@@ -21,9 +22,6 @@ class Shoak extends Motile {
         this.score = 0 // Age of the shark
         this.color = shoakColor || [random(255), random(255), random(255)]
         this.sight = [] // Current sight is stored to be displayed
-
-        this.angles = [] // Rotation decisions made by the Neural Net are stored to calculate standard deviation in an effort to weed out those who just turn in circles or just go straight
-        this.angleSD = 0
 
         this.school = new Population(schoolSize, 0.001, 0.1, () => new Foish())
     }
@@ -36,11 +34,13 @@ class Shoak extends Motile {
         const sight = []
         this.sight = []
         const angleVector = p5.Vector.fromAngle(this.velocity.heading(), 1)
-        const maxDist = Math.sqrt(topDownWidth * topDownWidth + sceneHeight * sceneHeight)
         angleVector.rotate(radians(-this.fov / 2)) // Starting angle for the rays
 
         for (let i = 0; i < this.fov; i += this.resolution) {
-            const points = qtree.queryLine(new Line(this.position, createVector(this.position.x + angleVector.x, this.position.y + angleVector.y)))
+            const points = qtree.query(
+                new Circle(this.position.x, this.position.y, this.perceptionRadius),
+                new Line(this.position, createVector(this.position.x + angleVector.x, this.position.y + angleVector.y))
+            )
             let closest = Infinity
             let closestPoint = null
 
@@ -53,8 +53,11 @@ class Shoak extends Motile {
                 }
             }
 
+            const distance = Infinity === closest || closest > this.perceptionRadius ? this.perceptionRadius : closest
+
             if (debug) {
-                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? topDownWidth : closest)
+                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? this.perceptionRadius : closest)
+
                 stroke(255, 255, 255, 20)
                 strokeWeight(2)
                 line(this.position.x, this.position.y, this.position.x + drawRay.x, this.position.y + drawRay.y)
@@ -65,15 +68,18 @@ class Shoak extends Motile {
                     fill(255, 0, 0)
                     circle(closestPoint.x, closestPoint.y, 2)
                 }
-            }
 
-            const distance = Infinity === closest ? maxDist : closest
+                noFill()
+                strokeWeight(1)
+                stroke(255)
+                circle(this.position.x, this.position.y, this.perceptionRadius * 2)
+            }
 
             /*
              * Input for the shark's Neural Net, for each ray the distance to the closest fish is a value from 0 to 1
              * The closest fishes will have a value closer to 1, furthest a value closer to 0
              */
-            sight.push(map(distance, 0, maxDist, 1, 0, true))
+            sight.push(map(distance, 0, this.perceptionRadius, 1, 0, true))
             // -1 means no fish interesects that ray so nothing should be displayed in the POV scene
             this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
 
@@ -87,19 +93,9 @@ class Shoak extends Motile {
             line(this.position.x, this.position.y, this.position.x + velocity.x, this.position.y + velocity.y)
         }
 
-        const result = this.brain.evaluate(sight)
+        const result = this.brain.evaluate(sight.concat([1 - this.mass / this.maxMass]))
         const mag = constrain(result[0], this.minSpeed, this.maxSpeed)
         const direction = constrain(result[1], -PI/12, PI/12)
-
-        /*
-         * Calculates the standard deviation for the rotation decisions of the shark in order to weed out those for which the ouptputs of the Neural Net are always the same whataver the input
-         * Currently only doing this for the first 200 frames of the shark's life to reduce computing load
-         */
-        if (this.score < 200) {
-            this.angles.push(degrees(direction))
-            const mean = this.angles.reduce((sum, value) => {return sum + value}, 0) / this.angles.length
-            this.angleSD = Math.sqrt(this.angles.reduce((sum, value) => {return sum + (value - mean) * (value - mean)}, 0) / (this.angles.length - 1))
-        }
 
         this.velocity.rotate(direction)
         this.applyForce(p5.Vector.fromAngle(this.velocity, mag))
@@ -116,30 +112,25 @@ class Shoak extends Motile {
         const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 10))
 
         for (const point of points) {
+            const massGain = Math.min(point.data.foish.mass, this.maxMass - this.mass)
+
+
+            this.mass += massGain
+            this.score += massGain
             this.school.population().splice(this.school.population().indexOf(point.data.foish), 1)
-            this.mass = constrain(this.mass + point.data.foish.mass, 0, this.maxMass)
-        }
-    }
-
-    age() {
-        this.score++
-
-        if (this.fitness() > frenzy.currentBest) {
-            frenzy.currentBest = this.fitness()
         }
 
-        if (this.fitness() > frenzy.allTimeBest) {
-            frenzy.allTimeBest = this.fitness()
+        if (this.score > frenzy.currentBest) {
+            frenzy.currentBest = this.score
+        }
+
+        if (this.score > frenzy.allTimeBest) {
+            frenzy.allTimeBest = this.score
         }
     }
 
     hunger() {
         this.mass -= parseFloat(getParameter('shoakHungerRate'))
-
-        // After 100 cycles of life, if the output of the Neural Net is constant and the shark keeps turning in a circle or just goes straight, accelerate its death
-        if (this.score > 100 && this.angleSD < 5) {
-            this.mass -= 1
-        }
     }
 
     reproduce() {
@@ -151,10 +142,7 @@ class Shoak extends Motile {
     }
 
     fitness() {
-        // If the standard deviation of the rotation decisions of the Neural Net is below a certain value, reduce drastically the shark fitness to reduce its chances to be selected for reproduction
-        const sd = map(this.angleSD, 0, 5, 0, 1, true)
-
-        return Math.pow(this.score * sd + 1, 4)
+        return Math.pow(this.score, 4)
     }
 
     species() {
@@ -163,7 +151,7 @@ class Shoak extends Motile {
 
     show() {
         stroke(255)
-        fill(this.color[0], this.color[1], this.color[2], map(this.fitness() / frenzy.currentBest, 0, 1, 50, 255))
+        fill(this.color[0], this.color[1], this.color[2], map(this.score / frenzy.currentBest, 0, 1, 50, 255))
         circle(this.position.x, this.position.y, this.radius() * 2)
     }
 }

@@ -19,19 +19,19 @@ class Motile {
 
     bind(xMin, xMax, yMin, yMax) {
         if (this.position.x + this.velocity.x - this.radius() < xMin) {
-            this.applyForce(createVector(this.maxSpeed, 0))
+            this.applyForce(createVector(this.maxSpeed, 0), 2 * this.maxForce)
         }
 
         if (this.position.x + this.velocity.x + this.radius() > xMax) {
-            this.applyForce(createVector(this.maxSpeed * -1, 0))
+            this.applyForce(createVector(this.maxSpeed * -1, 0), 2 * this.maxForce)
         }
 
         if (this.position.y + this.velocity.y - this.radius() < yMin) {
-            this.applyForce(createVector(0, this.maxSpeed))
+            this.applyForce(createVector(0, this.maxSpeed), 2 * this.maxForce)
         }
 
         if (this.position.y + this.velocity.y + this.radius() > yMax) {
-            this.applyForce(createVector(0, this.maxSpeed * -1))
+            this.applyForce(createVector(0, this.maxSpeed * -1), 2 * this.maxForce)
         }
     }
 

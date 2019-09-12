@@ -46,7 +46,7 @@ class Population {
 
             if (this.individuals[i].mass <= 0) {
                 this.graveyard.addCorpse(this.individuals.splice(i, 1)[0])
-            } else if (null === this.aliveBest || this.individuals[i].fitness() > this.aliveBest.fitness()) {
+            } else if (null === this.aliveBest || this.individuals[i].score > this.aliveBest.score) {
                 this.aliveBest = this.individuals[i]
             }
         }
@@ -94,7 +94,7 @@ class Population {
             }
 
             if (debug) {
-                console.log('Selected fitness '+Math.pow(selected.fitness().toFixed(2), 1/4))
+                console.log('Selected fitness '+selected.score.toFixed(2))
             }
 
             const child = selected.reproduce()

@@ -4,10 +4,13 @@ const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
 // Customizable parameters
 setParameter('displayPov', getParameter('displayPov', true))
 setParameter('frenzySize', getParameter('frenzySize', 30))
-setParameter('shoakMutationRate', getParameter('shoakMutationRate', 0.2))
+setParameter('shoakMutationRate', getParameter('shoakMutationRate', 20))
 setParameter('shoakHungerRate', getParameter('shoakHungerRate', 0.05))
 setParameter('shoakNNComplexity', getParameter('shoakNNComplexity', 2))
 setParameter('shoakNNSize', getParameter('shoakNNSize', 12))
+setParameter('shoakPerceptionRadius', getParameter('shoakPerceptionRadius', 200))
+setParameter('shoakFov', getParameter('shoakFov', 90))
+setParameter('shoakResolution', getParameter('shoakResolution', 0.5))
 
 const schoolSize = 15 // Number of fishes for each shark's aquarium
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
@@ -57,7 +60,6 @@ function draw() {
         shoak.bind(padding, topDownWidth - padding, padding, sceneHeight - padding)
         shoak.eat(qtree)
         shoak.think(qtree)
-        shoak.age()
         shoak.update()
     }
 
@@ -68,9 +70,10 @@ function draw() {
     stroke(255)
     fill(255)
     text('Generation: ' + frenzy.generation, 5, sceneHeight - 5)
-    text('Current best: ' + Math.pow((frenzy.aliveBest ? frenzy.aliveBest.fitness() : 0), 1 / 4).toFixed(2) + ' (' + frenzy.population().length + ' alive)', 5, sceneHeight - 20)
-    text('All time best: ' + Math.pow(frenzy.allTimeBest, 1 / 4).toFixed(2), 5, sceneHeight - 35)
-    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 50)
+    text('Alive: ' + frenzy.population().length, 5, sceneHeight - 20)
+    text('Current best: ' + (frenzy.aliveBest ? frenzy.aliveBest.score : 0).toFixed(2), 5, sceneHeight - 35)
+    text('All time best: ' + frenzy.allTimeBest.toFixed(2), 5, sceneHeight - 50)
+    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 65)
 
     // Only draw the best currently alive shark
     if (frenzy.aliveBest) {
@@ -87,7 +90,7 @@ function draw() {
             shoak.qtree.show()
         }
 
-        const maxDist = Math.sqrt(topDownWidth * topDownWidth + sceneHeight * sceneHeight)
+        const maxDist = frenzy.aliveBest.perceptionRadius
         const w = povWidth / frenzy.aliveBest.sight.length
         const maxDistSquared = maxDist * maxDist
 
@@ -117,7 +120,7 @@ function draw() {
 }
 
 function init() {
-    frenzy = new Population(debug ? 1 : parseInt(getParameter('frenzySize')), 0.0005, parseFloat(getParameter('shoakMutationRate')), () => new Shoak())
+    frenzy = new Population(debug ? 1 : parseInt(getParameter('frenzySize')), 0.0005, parseFloat(getParameter('shoakMutationRate')) / 100, () => new Shoak())
     frenzy.populate()
 }
 
@@ -138,6 +141,9 @@ function setParameter(name, value) {
         {'variableName': 'shoakHungerRate', 'sliderName': 'shoaks-hunger-rate'},
         {'variableName': 'shoakNNComplexity', 'sliderName': 'shoaks-nn-complexity'},
         {'variableName': 'shoakNNSize', 'sliderName': 'shoaks-nn-size'},
+        {'variableName': 'shoakPerceptionRadius', 'sliderName': 'shoaks-perception-radius'},
+        {'variableName': 'shoakFov', 'sliderName': 'shoaks-fov'},
+        {'variableName': 'shoakResolution', 'sliderName': 'shoaks-resolution'},
     ]
     const currentDisplayPov = getParameter('displayPov')
 

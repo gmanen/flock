@@ -168,8 +168,8 @@ class Quadtree {
         this.regions.push(new Quadtree(x + w, y + h, w, h, this.capacity))
     }
 
-    query(circle) {
-        if (!this.boundary.intersects(circle)) {
+    query(circle, line) {
+        if (!(this.boundary.intersects(circle) && (undefined === line || this.boundary.intersectsLine(line)))) {
             return []
         }
 
@@ -177,15 +177,21 @@ class Quadtree {
 
         if (this.subdivided()) {
             for (const region of this.regions) {
-                results = results.concat(region.query(circle))
+                results = results.concat(region.query(circle, line))
             }
 
             return results
         }
 
         for (const point of this.points) {
-            if (circle.contains(point)) {
-                results.push(point)
+            const intersectingPoints = undefined !== line ? line.intersectsPoly(point.poly) : false
+
+            if (circle.contains(point) && (undefined === line || false !== intersectingPoints)) {
+                if (undefined === line) {
+                    results.push(point)
+                } else {
+                    results = results.concat(intersectingPoints)
+                }
             }
         }
 

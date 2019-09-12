@@ -31,10 +31,10 @@
                 </div>
                 <div class="form-group">
                     <label for="shoaks-mutation-rate-slider">
-                        Shoak mutation rate (<span class="shoaks-mutation-rate-current">0.2</span>)
+                        Shoak mutation rate (<span class="shoaks-mutation-rate-current">20</span>%)
                     </label>
-                    <input id="shoaks-mutation-rate-slider" class="custom-range" type="range" min="0.05" max="0.4"
-                           step="0.05" value="0.2"/>
+                    <input id="shoaks-mutation-rate-slider" class="custom-range" type="range" min="5" max="40"
+                           step="5" value="20"/>
                     <small class="form-text text-muted">
                         Chance for each neuron of the neural network to mutate when reproducing.
                     </small>
@@ -48,6 +48,33 @@
                            value="0.05"/>
                     <small class="form-text text-muted">
                         Mass lost each cycle. A higher value means the shoaks will die quicker.
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-fill mr-4">
+                <div class="form-group">
+                    <label for="shoaks-perception-radius-slider">
+                        Shoak perception radius (<span class="shoaks-perception-radius-current">200</span> pixels)
+                    </label>
+                    <input id="shoaks-perception-radius-slider" class="custom-range" type="range" min="100" max="500"
+                           step="50" value="200"/>
+                </div>
+                <div class="form-group">
+                    <label for="shoaks-fov-slider">
+                        Shoak field of view (<span class="shoaks-fov-current">90</span>°)
+                    </label>
+                    <input id="shoaks-fov-slider" class="custom-range" type="range" min="45" max="90"
+                           step="5" value="90"/>
+                </div>
+                <div class="form-group">
+                    <label for="shoaks-resolution-slider">
+                        Shoak resolution (<span class="shoaks-resolution-current">0.5</span>)
+                    </label>
+                    <input id="shoaks-resolution-slider" class="custom-range" type="range" min="0.5" max="2"
+                           step="0.5" value="0.5"/>
+                    <small class="form-text text-muted">
+                        Angle between each ray hitting the shoaks' "eye".<br>
+                        Increasing this value reduces the quality of the shoaks' sight.
                     </small>
                 </div>
             </div>
