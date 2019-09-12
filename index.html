@@ -59,8 +59,9 @@
                     <input id="shoaks-nn-complexity-slider" class="custom-range" type="range" min="1" max="3" step="1"
                            value="2"/>
                     <small class="form-text text-muted">
-                        Number of layers of neurons in the neural network of each shoaks.<br>
-                        Increasing this value basically means the shoaks will have more computational power, but will take lmonger to learn.
+                        Number of layers of neurons in the neural network of each shoak.<br>
+                        Increasing this value basically means the shoaks will have more computational power, but will
+                        take longer to learn.
                     </small>
                 </div>
                 <div class="form-group">
@@ -78,28 +79,36 @@
         </div>
     </form>
     <h2>How it works</h2>
-    <p>On the left, you can see a top-down view of an environment where a simulation of a shoak (the circle) and a
+    <p>
+        On the left, you can see a top-down view of an environment where a simulation of a shoak (the circle) and a
         school of fish (the triangles) evolve. On the right is a representation of the first person point of view of the
-        shoak. There are actually <span class="shoaks-population-current">20</span> "fish bowls" running in parallel, only the one featuring the best shoak is draw. At
-        the start and when a new generation is born, the view may flicker a lot as it switches between the different
-        shoaks in the population before one of them takes the lead.</p>
+        shoak. There are <span class="shoaks-population-current">20</span> "fishbowls" running in parallel, only the one
+        featuring the best shoak is displayed. At the start and when a new generation is born, the view may flicker a
+        lot as it switches between the different shoaks in the population before one of them takes the lead.
+    </p>
     <p>
         The fishes are currently moving randomly, only following a flocking algorithm. They try to align with each other
         and group themselves. There is no AI behind their movement.<br>
-        The shoak is driven by an AI, that is a basic artificial neural network, a digital brain. The neural network
-        chooses a direction towards which to turn and how much it wants to move forward in that direction. It makes
-        those decisions according to what it can see - what is represented on the right side of the scene.</p>
-    <p>Both the shoak and the fishes have a mass. The shoak loses mass every frame and has to eat the fishes in order to
-        gain mass. If the shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the
-        shoaks / fishes. The more massive shoaks are, the easier it is for them to eat fishes (they have a bigger eating
-        range), but the slower they move. Same goes for the fishes, the smaller, less massive ones are faster (and are
-        not as nutritious for the shoak).</p>
-    <p>The shoaks learn via a genetic evolution algorithm. When all of the shoaks are dead, a new generation is born,
+        An AI - an artificial neural network, or digital brain - drives the shoak. The neural network has two outputs
+        (takes two decisions) every frame. The first output is a direction towards which to turn. The second output is
+        how much it wants to move forward in that direction. It makes those decisions according to what it can see - the
+        right-hand side of the scene.
+    </p>
+    <p>
+        Both the shoak and the fishes have a mass. The shoak loses mass every frame and has to eat the fishes to gain
+        mass. If the shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the shoaks /
+        fishes. The more massive shoaks are, the easier it is for them to eat fishes (they have a longer eating range),
+        but the slower they move. Same goes for the fishes, the smaller, less massive ones are faster (and are not as
+        nutritious for the shoak).
+    </p>
+    <p>
+        The shoaks learn via a genetic evolution algorithm. When all of the shoaks are dead, a new generation is born,
         evolved from the best performing shoak of the previous generation. The evolution consists of mutating the neural
         network of the shoaks who are selected for reproduction.<br>
-        The shoaks are selected for reproduction randomly, those who lived longer (were more apt at eating fishes) are
+        The shoaks are selected for reproduction randomly; those who lived longer (were more apt at eating fishes) are
         more likely to be selected. Currently, the reproduction is asexual: an individual chosen for reproduction clones
-        itself and the resulting child is mutated to form a new individual for the next generation.</p>
+        itself and the resulting child is mutated to form a new individual for the next generation.
+    </p>
     <h2>Going forward</h2>
     <p>There is still a lot to do with this mini project, including</p>
     <ul>
@@ -108,42 +117,57 @@
         <li>Try and incentivize the shoaks to work together</li>
         <li>Add currents forcing movement on the shoaks and fishes</li>
         <li>Add obstacles in the environment, providing fishes a way to maybe hide from the shoaks</li>
-        <li>Currently the shoaks have no memory, all decisions taken by the neural net are based on the information
+        <li>
+            Currently, the shoaks have no memory; all decisions taken by the neural net are based on the information
             gathered from the current frame only. Give the shoaks memory would maybe allow them to see patterns in the
             fish movements
         </li>
         <li>Go 3D</li>
     </ul>
     <h2>Thanks</h2>
-    <p>This project is based on the excellent videos of Daniel Shiffman and his youtube channel
-        <a target="_blank" href="https://www.youtube.com/user/shiffman">Coding Train</a> which I recommend you check
-        out. He has a lot of very good and interesting content.</p>
-    <p>The flocking algorithm is based on Craig Reynolds "<a target="_blank" href="https://www.red3d.com/cwr/boids/">boids</a>"
-        algorithm.</p>
-    <p>Some optimizations for the mutation algorithm were made thanks to a paper by David Montana on neural network
-        weight selmection using genetic algorithm found <a target="_blank"
-                                                           href="http://davidmontana.net/papers/hybrid.pdf">here</a></p>
-    <h2>On the technical side</h2>
-    <p>The project is made with <a target="_blank" href="https://p5js.org/">p5.js.</a><br>
-        Code is available on github: <a target="_blank" href="https://github.com/gmanen/shoaks">https://github.com/gmanen/shoaks</a>
+    <p>
+        This project is based on the excellent videos of Daniel Shiffman and his youtube channel
+        <a target="_blank" href="https://www.youtube.com/user/shiffman">Coding Train</a>, which I recommend you check
+        out.
     </p>
-    <p>Originally the shoaks and fishes were all in the same environment but it was much harder to find a good balance
-        for the hyper parameters (how many fishes and shoaks should there be in what area, how quickly the shoaks lose
-        and gain mass, the mutation rate, the neural net parameters etc.).</p>
-    <p>The first try at a neural net for the shoaks was a simple feed forward with a sigmoid activation function. It did
-        not work well at all, most shoaks ended up going in a circle (always choosing the same rotation angle). Changing
-        the activation function for ReLU was a big improvement on their learning capacity, which retrospectively makes
-        sense as sigmoid-ish activation functions seem to be more useful for classification problem whereas the rotation
-        decision is continuous.</p>
-    <p>The neural network is developed from scratch and I'd like to keep it that way as I use this mini project to learn
-        more about neural nets and machine learning in general. At some point in the future I would like to make it more
-        complex.</p>
-    <p>Currently the shoaks see in black and white, and only fishes. I'd like to add colours which would be a way to
-        have them see other shoaks, obstacles, walls and such as well as fishes. It probably requires a more complex
-        neural net though.</p>
-    <p>At the moment the reproduction is purely asexual (clone and mutation). I intend to implement crossover and maybe
-        randomly decide for each new individual in the next generation if it's born via asxual or sexual
-        reproduction.</p>
+    <p>
+        The flocking algorithm is based on Craig Reynolds "<a target="_blank" href="https://www.red3d.com/cwr/boids/">boids</a>"
+        algorithm.
+    </p>
+    <p>
+        Some optimizations for the mutation algorithm were made thanks to a paper by David Montana on neural network
+        weight selection using genetic algorithm found
+        <a target="_blank" href="http://davidmontana.net/papers/hybrid.pdf">here.</a>
+    </p>
+    <h2>On the technical side</h2>
+    <p>
+        The project is developed with <a target="_blank" href="https://p5js.org/">p5.js.</a><br>
+        Code is available on GitHub: <a target="_blank" href="https://github.com/gmanen/shoaks">https://github.com/gmanen/shoaks</a>
+    </p>
+    <p>
+        Originally the shoaks and fishes were all in the same environment, but it was much harder to find the right
+        balance for the hyperparameters.
+    </p>
+    <p>
+        The first try at a neural net for the shoaks was a simple feed-forward with a sigmoid activation function. It
+        did not work well at all; most shoaks ended up going in a circle (always choosing the same rotation angle).
+        Changing the activation function for ReLU was a significant improvement in their learning capacity. I guess it
+        makes sense as sigmoid-ish activation functions seem to be more useful for classification problem whereas the
+        rotation decision is continuous.
+    </p>
+    <p>
+        I developed the neural network from scratch. I use this mini-project to learn more about neural nets and machine
+        learning in general.
+    </p>
+    <p>
+        Currently, the shoaks see in black and white, and only fishes. I want to add colors which would be a way to have
+        them see other shoaks, obstacles, walls and such as well as fishes. It probably requires a more complex neural
+        net, however.
+    </p>
+    <p>
+        At the moment the reproduction is purely asexual (clone and mutation). I intend to implement crossover and maybe
+        randomly decide for each new individual in the next generation if it's born via asexual or sexual reproduction.
+    </p>
 </div>
 <script src="quadtree.js"></script>
 <script src="graveyard.js"></script>
