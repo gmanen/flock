@@ -2,13 +2,12 @@ const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has('debug') && parseInt(urlParams.get('debug')) === 1
 
 // Customizable parameters
-console.log()
-setParameter('displayPov', getParameter('displayPov',true))
-setParameter('frenzySize', getParameter('frenzySize',30))
-setParameter('shoakMutationRate', getParameter('shoakMutationRate',0.2))
-setParameter('shoakHungerRate', getParameter('shoakHungerRate',0.05))
-setParameter('shoakNNComplexity', getParameter('shoakNNComplexity',2))
-setParameter('shoakNNSize', getParameter('shoakNNSize',12))
+setParameter('displayPov', getParameter('displayPov', true))
+setParameter('frenzySize', getParameter('frenzySize', 30))
+setParameter('shoakMutationRate', getParameter('shoakMutationRate', 0.2))
+setParameter('shoakHungerRate', getParameter('shoakHungerRate', 0.05))
+setParameter('shoakNNComplexity', getParameter('shoakNNComplexity', 2))
+setParameter('shoakNNSize', getParameter('shoakNNSize', 12))
 
 const schoolSize = 15 // Number of fishes for each shark's aquarium
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
@@ -19,7 +18,7 @@ const sceneHeight = 400
 let frenzy = null
 
 function setup() {
-    const canvas = createCanvas(topDownWidth + povWidth, sceneHeight);
+    const canvas = createCanvas( getParameter('displayPov') ? topDownWidth + povWidth : topDownWidth, sceneHeight);
     canvas.parent('sketch');
 
     init()
@@ -69,10 +68,9 @@ function draw() {
     stroke(255)
     fill(255)
     text('Generation: ' + frenzy.generation, 5, sceneHeight - 5)
-    text('Alive best: ' + Math.pow((frenzy.aliveBest ? frenzy.aliveBest.fitness() : 0), 1 / 4).toFixed(2) + ' (' + frenzy.population().length + ' alive)', 5, sceneHeight - 20)
-    text('Current best: ' + Math.pow(frenzy.currentBest, 1 / 4).toFixed(2), 5, sceneHeight - 35)
-    text('All time best: ' + Math.pow(frenzy.allTimeBest, 1 / 4).toFixed(2), 5, sceneHeight - 50)
-    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 65)
+    text('Current best: ' + Math.pow((frenzy.aliveBest ? frenzy.aliveBest.fitness() : 0), 1 / 4).toFixed(2) + ' (' + frenzy.population().length + ' alive)', 5, sceneHeight - 20)
+    text('All time best: ' + Math.pow(frenzy.allTimeBest, 1 / 4).toFixed(2), 5, sceneHeight - 35)
+    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 50)
 
     // Only draw the best currently alive shark
     if (frenzy.aliveBest) {
@@ -124,7 +122,9 @@ function init() {
 }
 
 function getParameter(name, defaultValue) {
-    return JSON.parse(window.sessionStorage.getItem(name)) || defaultValue || null
+    const value = JSON.parse(window.sessionStorage.getItem(name))
+
+    return null === value ? defaultValue || null : value
 }
 
 function setParameter(name, value) {
@@ -139,24 +139,33 @@ function setParameter(name, value) {
         {'variableName': 'shoakNNComplexity', 'sliderName': 'shoaks-nn-complexity'},
         {'variableName': 'shoakNNSize', 'sliderName': 'shoaks-nn-size'},
     ]
+    const currentDisplayPov = getParameter('displayPov')
+
+    document.getElementById('sketch').style.width = (currentDisplayPov ? topDownWidth + povWidth : topDownWidth) + 'px'
+    document.getElementById('display-pov').checked = currentDisplayPov
 
     document.getElementById('display-pov').addEventListener('change', (event) => {
+        const newWidth = event.target.checked ? topDownWidth + povWidth : topDownWidth
+
         setParameter('displayPov', event.target.checked)
+        resizeCanvas(newWidth, sceneHeight)
+
+        document.getElementById('sketch').style.width = newWidth + 'px'
     })
 
     for (const slider of sliders) {
         const currentValue = getParameter(slider.variableName)
 
-        for (const element of document.getElementsByClassName(slider.sliderName+'-current')) {
+        for (const element of document.getElementsByClassName(slider.sliderName + '-current')) {
             element.innerHTML = currentValue
         }
 
-        document.getElementById(slider.sliderName+'-slider').value = currentValue
+        document.getElementById(slider.sliderName + '-slider').value = currentValue
 
-        document.getElementById(slider.sliderName+'-slider').addEventListener('change', (event) => {
+        document.getElementById(slider.sliderName + '-slider').addEventListener('change', (event) => {
             setParameter(slider.variableName, event.target.value)
 
-            for (const element of document.getElementsByClassName(slider.sliderName+'-current')) {
+            for (const element of document.getElementsByClassName(slider.sliderName + '-current')) {
                 element.innerHTML = event.target.value
             }
 
