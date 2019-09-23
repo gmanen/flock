@@ -1,9 +1,12 @@
 class Point {
-    constructor(x, y, poly, data) {
+    constructor(id, type, x, y, shape, data) {
+        this.id = id
+        this.type = type
         this.x = x
         this.y = y
-        this.poly = poly
+        this.shape = shape
         this.data = data
+        this.owner = null
     }
 }
 
@@ -37,7 +40,15 @@ class Line {
             return false;
         }
 
-        return createVector(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
+        return {x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1)};
+    }
+
+    intersectsShape(shape) {
+        if (shape instanceof Circle) {
+            return this.intersectsCircle(shape)
+        }
+
+        return this.intersectsPoly(shape)
     }
 
     intersectsPoly(poly) {
@@ -51,7 +62,48 @@ class Line {
             }
         }
 
-        return intersects.length ? intersects : false
+        return intersects.length ? intersects : []
+    }
+
+    intersectsCircle(circle) {
+        const r = circle.r
+        const h = circle.x
+        const k = circle.y
+
+        const m = (this.point2.y - this.point1.y) / (this.point2.x - this.point1.x)
+        const n = this.point1.y - m * this.point1.x
+
+        const a = 1 + sq(m)
+        const b = -h * 2 + (m * (n - k)) * 2
+        const c = sq(h) + sq(n - k) - sq(r)
+        const d = sq(b) - 4 * a * c
+
+        if (d >= 0) {
+            const intersections = [
+                (-b + sqrt(sq(b) - 4 * a * c)) / (2 * a),
+                (-b - sqrt(sq(b) - 4 * a * c)) / (2 * a)
+            ]
+
+            if (0 === d && intersections[0] > this.point1.x === this.point2.x > this.point1.x) {
+                return [{x: intersections[0], y: m * intersections[0] + n}]
+            }
+
+            if (0 === d) {
+                return []
+            }
+
+            const result = []
+
+            for (const intersection of intersections) {
+                if (intersection > this.point1.x === this.point2.x > this.point1.x) {
+                    result.push({x: intersection, y: m * intersection + n})
+                }
+            }
+
+            return result
+        }
+
+        return [];
     }
 }
 
@@ -86,10 +138,10 @@ class Rectangle {
     }
 
     intersectsLine(line) {
-        const nw = createVector(this.x - this.w, this.y - this.h)
-        const ne = createVector(this.x + this.w, this.y - this.h)
-        const sw = createVector(this.x - this.w, this.y + this.h)
-        const se = createVector(this.x + this.w, this.y + this.h)
+        const nw = {x: this.x - this.w, y: this.y - this.h}
+        const ne = {x: this.x + this.w, y: this.y - this.h}
+        const sw = {x: this.x - this.w, y: this.y + this.h}
+        const se = {x: this.x + this.w, y: this.y + this.h}
 
         return line.intersects(new Line(nw, ne)) || line.intersects(new Line(ne, se)) || line.intersects(new Line(se, sw)) || line.intersects(new Line(sw, nw))
     }
@@ -100,7 +152,7 @@ class Rectangle {
         const w = this.w
         const h = this.h
 
-        return !(point.x >= x + w || point.x <= x - w || point.y <= y - h || point.y >= y + h)
+        return !(point.x > x + w || point.x < x - w || point.y < y - h || point.y > y + h)
     }
 }
 
@@ -120,11 +172,14 @@ class Circle {
 }
 
 class Quadtree {
-    constructor(x, y, w, h, capacity) {
+    constructor(x, y, w, h, capacity, parent, root) {
         this.boundary = new Rectangle(x, y, w, h)
         this.capacity = capacity
-        this.points = []
+        this.points = {}
+        this.localPoints = []
         this.regions = []
+        this.parent = parent || null
+        this.root = root || this
     }
 
     insert(point) {
@@ -132,28 +187,39 @@ class Quadtree {
             return false
         }
 
-        if (!this.subdivided() && this.points.length < this.capacity) {
-            this.points.push(point)
+        this.points[point.id] = point
+
+        this.insertRecusive(point.id)
+    }
+
+    insertRecusive(pointId) {
+        if (!this.boundary.contains(this.root.points[pointId])) {
+            return false
+        }
+
+        if (!this.isSubdivided() && this.localPoints.length < this.capacity) {
+            this.localPoints.push(pointId)
+            this.root.points[pointId].owner = this
             return true
         }
 
         this.subdivide()
 
-        for (const insertPoint of [...this.points, point]) {
+        for (const insertPoint of [...this.localPoints, pointId]) {
             for (const region of this.regions) {
-                if (region.insert(insertPoint)) {
+                if (region.insertRecusive(insertPoint)) {
                     break
                 }
             }
         }
 
-        this.points = []
+        this.localPoints = []
 
         return true
     }
 
     subdivide() {
-        if (this.subdivided()) {
+        if (this.isSubdivided()) {
             return
         }
 
@@ -162,40 +228,112 @@ class Quadtree {
         const w = this.boundary.w / 2
         const h = this.boundary.h / 2
 
-        this.regions.push(new Quadtree(x - w, y - h, w, h, this.capacity))
-        this.regions.push(new Quadtree(x + w, y - h, w, h, this.capacity))
-        this.regions.push(new Quadtree(x - w, y + h, w, h, this.capacity))
-        this.regions.push(new Quadtree(x + w, y + h, w, h, this.capacity))
+        this.regions.push(new Quadtree(x - w, y - h, w, h, this.capacity, this, this.root))
+        this.regions.push(new Quadtree(x + w, y - h, w, h, this.capacity, this, this.root))
+        this.regions.push(new Quadtree(x - w, y + h, w, h, this.capacity, this, this.root))
+        this.regions.push(new Quadtree(x + w, y + h, w, h, this.capacity, this, this.root))
     }
 
-    query(circle, line) {
-        if (!(this.boundary.intersects(circle) && (undefined === line || this.boundary.intersectsLine(line)))) {
-            return []
+    query(circle, options) {
+        options = Object.assign({exclude: [], types: []}, options)
+
+        return Object.values(this.queryRecursive(circle, options))
+    }
+
+    queryRecursive(circle, options) {
+        if (!(this.boundary.intersects(circle))) {
+            return {}
         }
 
-        let results = []
+        let results = {}
 
-        if (this.subdivided()) {
+        if (this.isSubdivided()) {
             for (const region of this.regions) {
-                results = results.concat(region.query(circle, line))
+                results = Object.assign(results, region.queryRecursive(circle, options))
             }
 
             return results
         }
 
-        for (const point of this.points) {
-            const intersectingPoints = undefined !== line ? line.intersectsPoly(point.poly) : false
+        for (const pointId of this.localPoints) {
+            if (options.exclude.indexOf(pointId) >= 0) {
+                continue
+            }
 
-            if (circle.contains(point) && (undefined === line || false !== intersectingPoints)) {
-                if (undefined === line) {
-                    results.push(point)
-                } else {
-                    results = results.concat(intersectingPoints)
-                }
+            if (options.types.length > 0 && options.types.indexOf(this.root.points[pointId].type) < 0) {
+                continue
+            }
+
+            const point = this.root.points[pointId]
+
+            if (circle.contains(point)) {
+                results[pointId] = point
             }
         }
 
         return results
+    }
+
+    move(pointId, newX, newY, newShape, newData) {
+        const point = this.root.points[pointId]
+
+        point.x = newX
+        point.y = newY
+        point.shape = newShape
+
+        if (newData) {
+            point.data = Object.assign(point.data, newData)
+        }
+
+        if (point.owner.boundary.contains(point)) {
+            return
+        }
+
+        const formerOwner = point.owner
+
+        if (null !== formerOwner.parent) {
+            formerOwner.parent.relocate(point)
+            formerOwner.localPoints.splice(formerOwner.localPoints.indexOf(pointId), 1)
+            formerOwner.parent.cleanup()
+        }
+    }
+
+    relocate(point) {
+        if (!this.boundary.contains(point)) {
+            if (null !== this.parent) {
+                this.parent.relocate(point)
+            }
+
+            return
+        }
+
+        this.insertRecusive(point.id)
+    }
+
+    cleanup() {
+        let points = this.getLocalPointsRecursive()
+
+        if (points.length < this.capacity) {
+            this.localPoints = points
+
+            for (const point of points) {
+                this.root.points[point].owner = this
+            }
+
+            this.regions = []
+        }
+    }
+
+    remove(pointId) {
+        const owner = this.points[pointId].owner
+
+        owner.localPoints.splice(owner.localPoints.indexOf(pointId), 1)
+
+        if (null !== owner.parent) {
+            owner.parent.cleanup()
+        }
+
+        delete this.points[pointId]
     }
 
     queryLine(line) {
@@ -205,7 +343,7 @@ class Quadtree {
 
         let results = []
 
-        if (this.subdivided()) {
+        if (this.isSubdivided()) {
             for (const region of this.regions) {
                 results = results.concat(region.queryLine(line))
             }
@@ -213,8 +351,9 @@ class Quadtree {
             return results
         }
 
-        for (const point of this.points) {
-            const intersectingPoints = line.intersectsPoly(point.poly)
+        for (const pointId of this.localPoints) {
+            const point = this.root.points[pointId]
+            const intersectingPoints = line.intersectsShape(point.shape)
 
             if (false !== intersectingPoints) {
                 results = results.concat(intersectingPoints)
@@ -227,7 +366,7 @@ class Quadtree {
     count() {
         let count = 0
 
-        if (this.subdivided()) {
+        if (this.isSubdivided()) {
             for (const region of this.regions) {
                 count += region.count()
             }
@@ -235,10 +374,22 @@ class Quadtree {
             return count
         }
 
-        return this.points.length
+        return this.localPoints.length
     }
 
-    subdivided() {
+    getLocalPointsRecursive() {
+        let points = []
+
+        if (this.isSubdivided()) {
+            for (const region of this.regions) {
+                points = points.concat(region.getLocalPointsRecursive())
+            }
+        }
+
+        return points.concat(this.localPoints)
+    }
+
+    isSubdivided() {
         return this.regions.length > 0
     }
 
@@ -249,7 +400,7 @@ class Quadtree {
         rectMode(CENTER)
         rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
 
-        if (this.subdivided()) {
+        if (this.isSubdivided()) {
             this.regions.map(region => {
                 region.show()
             })

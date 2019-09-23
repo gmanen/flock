@@ -1,152 +1,130 @@
-class Shoak extends Motile {
-    constructor(brain, shoakColor) {
-        super(4, 2, 8, 0.2, 15)
+const generateCircle = self => {
+    return new Circle(self.position.x, self.position.y, self.radius)
+}
 
-        this.fov = parseInt(getParameter('shoakFov'))
-        this.resolution = parseFloat(getParameter('shoakResolution')) // Increment step size for the rays simulating the shark's vision
-        this.perceptionRadius = parseInt(getParameter('shoakPerceptionRadius'))
+const Shoak = (id, brain, shoakColor) => {
+    const baseSpeed = 4
+    const baseMass = 15
+    const fov = parseInt(getParameter('shoakFov'))
+    const resolution = parseFloat(getParameter('shoakResolution'))
 
-        if (!brain) {
-            const layers = []
+    if (!brain) {
+        const layers = []
 
-            for (let i = 0; i < parseInt(getParameter('shoakNNComplexity')); i++) {
-                layers.push(parseInt(getParameter('shoakNNSize')))
-            }
-
-            brain = new Brain(this.fov / this.resolution + 1, layers, 2, 'relu')
-            brain.randomize()
+        for (let i = 0; i < parseInt(getParameter('shoakNNComplexity')); i++) {
+            layers.push(parseInt(getParameter('shoakNNSize')))
         }
 
-        this.maxMass = 30
-        this.brain = brain
-        this.score = 0 // Age of the shark
-        this.color = shoakColor || [random(255), random(255), random(255)]
-        this.sight = [] // Current sight is stored to be displayed
-
-        this.school = new Population(schoolSize, 0.001, 0.1, () => new Foish())
+        brain = new Brain(fov * resolution + 1, layers, 2, 'relu')
+        brain.randomize()
     }
 
-    radius() {
-        return 5 + this.mass
+    const velocity = p5.Vector.random2D()
+    velocity.setMag(baseSpeed)
+
+    const self = {
+        id: 'shoak-'+id,
+        baseSpeed,
+        minSpeed: 2,
+        maxSpeed: 8,
+        maxForce: 0.2,
+        mass: baseMass,
+        position: createVector(random(topDownWidth), random(sceneHeight)),
+        velocity: velocity,
+        acceleration: createVector(),
+        radius: 5 + baseMass,
+        fov,
+        resolution, // Increment step size for the rays simulating the shark's vision
+        sightRadius: parseInt(getParameter('shoakSightRadius')),
+        maxMass: 30,
+        brain,
+        score: 0, // Useful mass eaten by the shark
+        color: shoakColor || (360 + Math.floor(random(-30, 31))) % 360,
+        sight: [], // Current sight is stored to be displayed
+        generateShape: generateCircle
     }
 
-    think(qtree) {
-        const sight = []
-        this.sight = []
-        const angleVector = p5.Vector.fromAngle(this.velocity.heading(), 1)
-        angleVector.rotate(radians(-this.fov / 2)) // Starting angle for the rays
+    self.shape = generateCircle(self)
 
-        for (let i = 0; i < this.fov; i += this.resolution) {
-            const points = qtree.query(
-                new Circle(this.position.x, this.position.y, this.perceptionRadius),
-                new Line(this.position, createVector(this.position.x + angleVector.x, this.position.y + angleVector.y))
-            )
-            let closest = Infinity
-            let closestPoint = null
+    const shoakBehaviors = self => ({
+        think: qtree => {
+            const sight = self.see(qtree, ['foish'], self.sight)
+
+            if (debug) {
+                const velocity = p5.Vector.fromAngle(self.velocity.heading(), 100)
+                stroke(0, 0, 255)
+                strokeWeight(2)
+                line(self.position.x, self.position.y, self.position.x + velocity.x, self.position.y + velocity.y)
+            }
+
+            const result = self.brain.evaluate(sight.concat([1 - self.mass / self.maxMass]))
+            const mag = constrain(result[0], self.minSpeed, self.maxSpeed)
+            const direction = constrain(result[1], -PI / 12, PI / 12)
+
+            self.velocity.rotate(direction)
+            self.applyForce(p5.Vector.fromAngle(self.velocity, mag))
+
+            if (debug) {
+                const computed = p5.Vector.fromAngle(self.velocity.heading(), 100)
+                stroke(255, 0, 0)
+                strokeWeight(2)
+                line(self.position.x, self.position.y, self.position.x + computed.x, self.position.y + computed.y)
+            }
+        },
+
+        eat: qtree => {
+            const eaten = []
+            const points = qtree.query(new Circle(self.position.x, self.position.y, self.radius + 10), {types: ['foish']})
 
             for (const point of points) {
-                const d = p5.Vector.dist(this.position, point)
+                const massGain = Math.min(point.data.mass, self.maxMass - self.mass)
 
-                if (d < closest) {
-                    closest = d
-                    closestPoint = point
-                }
+                self.mass += massGain
+                self.radius = 5 + self.mass
+                self.score += massGain
+                eaten.push(point.data.subject)
             }
 
-            const distance = Infinity === closest || closest > this.perceptionRadius ? this.perceptionRadius : closest
-
-            if (getParameter('debug')) {
-                const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? this.perceptionRadius : closest)
-
-                stroke(255, 255, 255, 20)
-                strokeWeight(2)
-                line(this.position.x, this.position.y, this.position.x + drawRay.x, this.position.y + drawRay.y)
-
-                if (closestPoint) {
-                    strokeWeight(1)
-                    stroke(255, 0, 0)
-                    fill(255, 0, 0)
-                    circle(closestPoint.x, closestPoint.y, 2)
-                }
-
-                noFill()
-                strokeWeight(1)
-                stroke(255)
-                circle(this.position.x, this.position.y, this.perceptionRadius * 2)
+            if (self.score > frenzy.allTimeBest) {
+                frenzy.allTimeBest = self.score
             }
 
-            /*
-             * Input for the shark's Neural Net, for each ray the distance to the closest fish is a value from 0 to 1
-             * The closest fishes will have a value closer to 1, furthest a value closer to 0
-             */
-            sight.push(map(distance, 0, this.perceptionRadius, 1, 0, true))
-            // -1 means no fish intersects that ray so nothing should be displayed in the POV scene
-            this.sight.push(Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - this.velocity.heading()))))
+            return eaten
+        },
 
-            angleVector.rotate(radians(this.resolution))
+        age: () => {
+
+        },
+
+        hunger: () => {
+            self.mass -= parseFloat(getParameter('shoakHungerRate'))
+        },
+
+        reproduce: (id) =>  {
+            return Shoak(id, self.brain.clone(), self.color)
+        },
+
+        mutate: (mutationRate) => {
+            self.brain.mutate(mutationRate)
+        },
+
+        fitness: () => {
+            return Math.pow(self.score, 4)
+        },
+
+        species: () => {
+            return self.color.toString()
+        },
+
+        show: () => {
+            const opacity = map(null === frenzy.aliveBest || 0 === frenzy.aliveBest.score ? 1 : self.score / frenzy.aliveBest.score, 0, 1, 50, 255, true)
+            const shoakColor = color('hsba('+self.color+', 100%, 80%, '+opacity+')')
+
+            stroke(shoakColor)
+            fill(shoakColor)
+            circle(Math.floor(self.position.x), Math.floor(self.position.y), self.radius * 2)
         }
+    })
 
-        if (getParameter('debug')) {
-            const velocity = p5.Vector.fromAngle(this.velocity.heading(), 100)
-            stroke(0, 0, 255)
-            strokeWeight(2)
-            line(this.position.x, this.position.y, this.position.x + velocity.x, this.position.y + velocity.y)
-        }
-
-        const result = this.brain.evaluate(sight.concat([1 - this.mass / this.maxMass]))
-        const mag = constrain(result[0], this.minSpeed, this.maxSpeed)
-        const direction = constrain(result[1], -PI / 12, PI / 12)
-
-        this.velocity.rotate(direction)
-        this.applyForce(p5.Vector.fromAngle(this.velocity, mag))
-
-        if (getParameter('debug')) {
-            const computed = p5.Vector.fromAngle(this.velocity.heading(), 100)
-            stroke(255, 0, 0)
-            strokeWeight(2)
-            line(this.position.x, this.position.y, this.position.x + computed.x, this.position.y + computed.y)
-        }
-    }
-
-    eat(qtree) {
-        const points = qtree.query(new Circle(this.position.x, this.position.y, this.radius() + 10))
-
-        for (const point of points) {
-            const massGain = Math.min(point.data.foish.mass, this.maxMass - this.mass)
-
-            this.mass += massGain
-            this.score += massGain
-            this.school.population().splice(this.school.population().indexOf(point.data.foish), 1)
-        }
-
-        if (this.score > frenzy.allTimeBest) {
-            frenzy.allTimeBest = this.score
-        }
-    }
-
-    hunger() {
-        this.mass -= parseFloat(getParameter('shoakHungerRate'))
-    }
-
-    reproduce() {
-        return new Shoak(this.brain.clone(), this.color)
-    }
-
-    mutate(mutationRate) {
-        this.brain.mutate(mutationRate)
-    }
-
-    fitness() {
-        return Math.pow(this.score, 4)
-    }
-
-    species() {
-        return this.color.map(value => '' + Math.round(value)).join
-    }
-
-    show() {
-        stroke(255)
-        fill(this.color[0], this.color[1], this.color[2], map(null === frenzy.aliveBest || 0 === frenzy.aliveBest.score ? 1 : this.score / frenzy.aliveBest.score, 0, 1, 50, 255))
-        circle(this.position.x, this.position.y, this.radius() * 2)
-    }
+    return Object.assign(self, motileBehaviors(self), shoakBehaviors(self), canSee(self))
 }

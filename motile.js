@@ -1,58 +1,80 @@
-class Motile {
-    constructor(baseSpeed, minSpeed, maxSpeed, maxForce, mass) {
-        this.baseSpeed = baseSpeed
-        this.minSpeed = minSpeed
-        this.maxSpeed = maxSpeed
-        this.maxForce = maxForce
+const getSteering = (desiredVelocity, currentVelocity) => p5.Vector.sub(desiredVelocity, currentVelocity)
+const getAccelerationFromForce = (mass, force, limit) => {
+    const resultingAcceleration = p5.Vector.div(force, mass)
+    resultingAcceleration.limit(limit)
 
-        this.position = createVector(random(topDownWidth), random(sceneHeight))
-        this.velocity = p5.Vector.random2D()
-        this.velocity.setMag(this.baseSpeed)
-        this.acceleration = createVector()
+    return resultingAcceleration
+}
 
-        this.mass = mass || 1
-    }
-
-    radius() {
-        return 1
-    }
-
-    bind(xMin, xMax, yMin, yMax) {
-        if (this.position.x + this.velocity.x - this.radius() < xMin) {
-            this.applyForce(createVector(this.maxSpeed, 0), 2 * this.maxForce)
+const canBounce = self => ({
+    bounce: (xMin, xMax, yMin, yMax) => {
+        const forces = []
+        
+        if (self.position.x + self.velocity.x - self.radius < xMin) {
+            forces.push(createVector(self.maxSpeed, 0))
         }
 
-        if (this.position.x + this.velocity.x + this.radius() > xMax) {
-            this.applyForce(createVector(this.maxSpeed * -1, 0), 2 * this.maxForce)
+        if (self.position.x + self.velocity.x + self.radius > xMax) {
+            forces.push(createVector(self.maxSpeed * -1, 0))
         }
 
-        if (this.position.y + this.velocity.y - this.radius() < yMin) {
-            this.applyForce(createVector(0, this.maxSpeed), 2 * this.maxForce)
+        if (self.position.y + self.velocity.y - self.radius < yMin) {
+            forces.push(createVector(0, self.maxSpeed))
         }
 
-        if (this.position.y + this.velocity.y + this.radius() > yMax) {
-            this.applyForce(createVector(0, this.maxSpeed * -1), 2 * this.maxForce)
+        if (self.position.y + self.velocity.y + self.radius > yMax) {
+            forces.push(createVector(0, self.maxSpeed * -1))
+        }
+
+        for (const force of forces) {
+            self.acceleration.add(getAccelerationFromForce(self.mass, force, 2 * self.maxForce))
         }
     }
+})
 
-    steer(force, limit) {
-        force.sub(this.velocity)
-        this.applyForce(force, limit)
+const canSteer = self => ({
+    steer: desired => self.acceleration.add(getAccelerationFromForce(self.mass, getSteering(desired, self.velocity), self.maxForce))
+})
+
+const canApplyForce = self => ({
+    applyForce: (force, limit) => {
+        limit = limit || self.maxForce
+        self.acceleration.add(getAccelerationFromForce(self.mass, force, limit))
+    }
+})
+
+const canUpdate = self => ({
+    update: () => {
+        self.position.add(self.velocity)
+        self.position.x = constrain(self.position.x, 0, topDownWidth)
+        self.position.y = constrain(self.position.y, 0, sceneHeight)
+        self.velocity.add(self.acceleration)
+        self.velocity.limit(self.maxSpeed)
+        self.velocity.setMag(max(self.velocity.mag(), self.minSpeed))
+        self.acceleration.mult(0)
+        self.shape = self.generateShape(self)
+    }
+})
+
+const motileBehaviors = self => Object.assign({}, canBounce(self), canSteer(self), canApplyForce(self), canUpdate(self))
+
+const Motile = (baseSpeed, minSpeed, maxSpeed, maxForce, mass) => {
+    mass = mass || 1
+
+    const velocity = p5.Vector.random2D()
+    velocity.setMag(baseSpeed)
+
+    const self = {
+        baseSpeed,
+        minSpeed,
+        maxSpeed,
+        maxForce,
+        mass,
+        position: createVector(random(topDownWidth), random(sceneHeight)),
+        velocity: velocity,
+        acceleration: createVector(),
+        radius: 1,
     }
 
-    applyForce(force, limit) {
-        force.div(this.mass)
-        force.limit(limit || this.maxForce)
-        this.acceleration.add(force)
-    }
-
-    update() {
-        this.position.add(this.velocity)
-        this.position.x = constrain(this.position.x, 0, topDownWidth)
-        this.position.y = constrain(this.position.y, 0, sceneHeight)
-        this.velocity.add(this.acceleration)
-        this.velocity.limit(this.maxSpeed)
-        this.velocity.setMag(max(this.velocity.mag(), this.minSpeed))
-        this.acceleration.mult(0)
-    }
+    return Object.assign(self, motileBehaviors(self))
 }

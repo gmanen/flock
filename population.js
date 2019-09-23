@@ -10,12 +10,21 @@ class Population {
         this.allTimeBest = 0
         this.aliveBest = null
         this.generation = 1
+        this.nextId = 1
     }
 
     populate() {
+        const created = []
+
         for (let i = this.individuals.length; i < this.size; i++) {
-            this.individuals.push(this.generateIndividual())
+            const newIndividual = this.generateIndividual(this.nextId)
+            this.nextId++
+
+            this.individuals.push(newIndividual)
+            created.push(newIndividual)
         }
+
+        return created
     }
 
     population() {
@@ -31,36 +40,80 @@ class Population {
             return
         }
 
-        this.select(this.size, this.graveyard.getAllCorpses())
+        const selected = this.select(this.size, this.graveyard.getAllCorpses())
 
         this.generation++
+        return this.reproduceAsexually(selected)
+    }
+
+    age() {
+        this.aliveBest = null
+
+        for (const individual of this.individuals) {
+            individual.age()
+
+            if (null === this.aliveBest || individual.score > this.aliveBest.score) {
+                this.aliveBest =individual
+            }
+        }
     }
 
     hunger() {
-        this.aliveBest = null
+        const removed = []
 
         for (let i = this.individuals.length - 1; i >=0; i--) {
             this.individuals[i].hunger()
 
             if (this.individuals[i].mass <= 0) {
-                this.graveyard.addCorpse(this.individuals.splice(i, 1)[0])
-            } else if (null === this.aliveBest || this.individuals[i].score > this.aliveBest.score) {
-                this.aliveBest = this.individuals[i]
+                removed.push(this.individuals[i])
+                this.remove(this.individuals[i])
             }
+        }
+
+        return removed
+    }
+
+    remove(individual) {
+        const index = this.individuals.indexOf(individual)
+
+        if (index >= 0) {
+            this.graveyard.addCorpse(this.individuals.splice(index, 1)[0])
         }
     }
 
     reproduce() {
+        let created = []
+
         if (this.individuals.length < this.size) {
             for (let i = 0; i < this.size - this.individuals.length; i++) {
                 if (Math.random() <= this.reproductionRate) {
-                    this.select(1, this.individuals)
+                    const selected = this.select(1, this.individuals)
+
+                    created = created.concat(this.reproduceAsexually(selected))
                 }
             }
         }
+
+        return created
+    }
+
+    reproduceAsexually(individuals) {
+        const created = []
+
+        for (const individual of individuals) {
+            const child = individual.reproduce(this.nextId)
+            child.mutate(this.mutationRate)
+            this.nextId++
+
+            this.individuals.push(child)
+            created.push(child)
+        }
+
+        return created
     }
 
     select(number, group) {
+        const selectedList = []
         let sumFitness = 0
         let minFitness = Infinity
         let maxFitness = 0
@@ -74,7 +127,7 @@ class Population {
             if (fitness > maxFitness) maxFitness = fitness
         }
 
-        if (getParameter('debug')) {
+        if (debug) {
             console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+Math.pow(maxFitness, 1/4).toFixed(2)+', min fitness = '+Math.pow(minFitness, 1/4).toFixed(2)+')')
         }
 
@@ -96,14 +149,13 @@ class Population {
                 selected = group[0]
             }
 
-            if (getParameter('debug')) {
+            if (debug) {
                 console.log('Selected fitness '+selected.score.toFixed(2))
             }
 
-            const child = selected.reproduce()
-            child.mutate(this.mutationRate)
-
-            this.individuals.push(child)
+            selectedList.push(selected)
         }
+
+        return selectedList
     }
 }
