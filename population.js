@@ -6,7 +6,7 @@ class Population {
         this.generateIndividual = generateIndividual
 
         this.individuals = []
-        this.graveyard = new Graveyard(5)
+        this.graveyard = new Graveyard()
         this.allTimeBest = 0
         this.aliveBest = null
         this.generation = 1
@@ -37,13 +37,24 @@ class Population {
 
     nextGeneration() {
         if (!this.isExtinct()) {
-            return
+            return []
         }
 
-        const selected = this.select(this.size, this.graveyard.getAllCorpses())
+        let created = []
+        const corpses = this.graveyard.corpses
 
+        for (let i = 0; i < this.size; i++) {
+            if ((corpses.length < 2) || p.random() <= 0.5) {
+                created = created.concat(this.reproduceAsexually(this.select(1, corpses)))
+            } else {
+                created = created.concat(this.reproduceSexually([this.select(2, corpses, true)]))
+            }
+        }
+
+        this.graveyard.clear()
         this.generation++
-        return this.reproduceAsexually(selected)
+
+        return created
     }
 
     age() {
@@ -53,24 +64,23 @@ class Population {
             individual.age()
 
             if (null === this.aliveBest || individual.score > this.aliveBest.score) {
-                this.aliveBest =individual
+                this.aliveBest = individual
             }
         }
     }
 
     hunger() {
-        const removed = []
+        const starved = []
 
         for (let i = this.individuals.length - 1; i >=0; i--) {
             this.individuals[i].hunger()
 
             if (this.individuals[i].mass <= 0) {
-                removed.push(this.individuals[i])
-                this.remove(this.individuals[i])
+                starved.push(this.individuals[i])
             }
         }
 
-        return removed
+        return starved
     }
 
     remove(individual) {
@@ -82,14 +92,22 @@ class Population {
     }
 
     reproduce() {
+        if (this.isExtinct()) {
+            return []
+        }
+
         let created = []
 
         if (this.individuals.length < this.size) {
             for (let i = 0; i < this.size - this.individuals.length; i++) {
-                if (Math.random() <= this.reproductionRate) {
-                    const selected = this.select(1, this.individuals)
+                const roll = p.random()
 
-                    created = created.concat(this.reproduceAsexually(selected))
+                if (roll < this.reproductionRate) {
+                    if ((this.individuals.length < 2) || roll <= this.reproductionRate / 2) {
+                        created = created.concat(this.reproduceAsexually(this.select(1, this.individuals)))
+                    } else {
+                        created = created.concat(this.reproduceSexually([this.select(2, this.individuals, true)]))
+                    }
                 }
             }
         }
@@ -101,9 +119,8 @@ class Population {
         const created = []
 
         for (const individual of individuals) {
-            const child = individual.reproduce(this.nextId)
+            const child = individual.cloneSelf(this.nextId++)
             child.mutate(this.mutationRate)
-            this.nextId++
 
             this.individuals.push(child)
             created.push(child)
@@ -112,13 +129,33 @@ class Population {
         return created
     }
 
-    select(number, group) {
+    reproduceSexually(couples) {
+        const created = []
+
+        for (const individuals of couples) {
+            const child = individuals[0].reproduce(this.nextId++, individuals[1])
+
+            child.mutate(this.mutationRate)
+
+            this.individuals.push(child)
+            created.push(child)
+        }
+
+        return created
+    }
+
+    select(number, group, different) {
+        if (number > group.length) {
+            throw 'Cannot select '+number+' individuals from '+group.length
+        }
+
+        const population = [...group]
         const selectedList = []
         let sumFitness = 0
         let minFitness = Infinity
         let maxFitness = 0
 
-        for (let individual of group) {
+        for (let individual of population) {
             const fitness  = individual.fitness()
 
             sumFitness += fitness
@@ -128,25 +165,25 @@ class Population {
         }
 
         if (debug) {
-            console.log('Selecting '+number+' individuals out of '+ group.length + ' (max fitness = '+Math.pow(maxFitness, 1/4).toFixed(2)+', min fitness = '+Math.pow(minFitness, 1/4).toFixed(2)+')')
+            console.log('Selecting '+number+' individuals out of '+ population.length + ' (max fitness = '+Math.pow(maxFitness, 1/4).toFixed(2)+', min fitness = '+Math.pow(minFitness, 1/4).toFixed(2)+')')
         }
 
         for (let i = 0; i < number; i++) {
-            const random = Math.random()
-            let offset = 0
-            let selected = null
+            const random = p.random()
+            let offset = population[0].fitness()
+            let selected = population[0]
 
-            for (let j = 0; j < group.length && null === selected; j++) {
-                offset += group[j].fitness() / sumFitness
+            for (let j = 1; j < population.length && population[0] === selected; j++) {
+                offset += population[j].fitness() / sumFitness
 
                 if (random <= offset) {
-                    selected = group[j]
+                    selected = population[j]
                 }
             }
 
-            // If all individuals of the population have a fitness equal to 0 none will be selected
-            if (!selected) {
-                selected = group[0]
+            if (different) {
+                population.splice(population.indexOf(selected), 1)
+                sumFitness -= selected.fitness()
             }
 
             if (debug) {

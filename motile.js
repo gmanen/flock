@@ -11,19 +11,19 @@ const canBounce = self => ({
         const forces = []
         
         if (self.position.x + self.velocity.x - self.radius < xMin) {
-            forces.push(createVector(self.maxSpeed, 0))
+            forces.push(p.createVector(self.maxSpeed, 0))
         }
 
         if (self.position.x + self.velocity.x + self.radius > xMax) {
-            forces.push(createVector(self.maxSpeed * -1, 0))
+            forces.push(p.createVector(self.maxSpeed * -1, 0))
         }
 
         if (self.position.y + self.velocity.y - self.radius < yMin) {
-            forces.push(createVector(0, self.maxSpeed))
+            forces.push(p.createVector(0, self.maxSpeed))
         }
 
         if (self.position.y + self.velocity.y + self.radius > yMax) {
-            forces.push(createVector(0, self.maxSpeed * -1))
+            forces.push(p.createVector(0, self.maxSpeed * -1))
         }
 
         for (const force of forces) {
@@ -33,24 +33,25 @@ const canBounce = self => ({
 })
 
 const canSteer = self => ({
-    steer: desired => self.acceleration.add(getAccelerationFromForce(self.mass, getSteering(desired, self.velocity), self.maxForce))
+    steer: (desired, limit) => {
+        self.acceleration.add(getAccelerationFromForce(self.mass, getSteering(desired, self.velocity), limit || self.maxForce))
+    }
 })
 
 const canApplyForce = self => ({
     applyForce: (force, limit) => {
-        limit = limit || self.maxForce
-        self.acceleration.add(getAccelerationFromForce(self.mass, force, limit))
+        self.acceleration.add(getAccelerationFromForce(self.mass, force, limit || self.maxForce))
     }
 })
 
 const canUpdate = self => ({
     update: () => {
         self.position.add(self.velocity)
-        self.position.x = constrain(self.position.x, 0, topDownWidth)
-        self.position.y = constrain(self.position.y, 0, sceneHeight)
+        self.position.x = p.constrain(self.position.x, 0, topDownWidth)
+        self.position.y = p.constrain(self.position.y, 0, topDownHeight)
         self.velocity.add(self.acceleration)
         self.velocity.limit(self.maxSpeed)
-        self.velocity.setMag(max(self.velocity.mag(), self.minSpeed))
+        self.velocity.setMag(p.max(self.velocity.mag(), self.minSpeed))
         self.acceleration.mult(0)
         self.shape = self.generateShape(self)
     }
@@ -70,9 +71,9 @@ const Motile = (baseSpeed, minSpeed, maxSpeed, maxForce, mass) => {
         maxSpeed,
         maxForce,
         mass,
-        position: createVector(random(topDownWidth), random(sceneHeight)),
+        position: p.createVector(p.random(topDownWidth), p.random(topDownHeight)),
         velocity: velocity,
-        acceleration: createVector(),
+        acceleration: p.createVector(),
         radius: 1,
     }
 

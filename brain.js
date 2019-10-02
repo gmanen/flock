@@ -5,6 +5,9 @@ const activationFunctions = {
 
 class Brain {
     constructor(inputs, layers, outputs, activationFunction) {
+        this.inputs = inputs
+        this.layers = layers
+        this.outputs = outputs
         this.biases = []
         this.weights = []
         this.activationFunction = activationFunction || 'sigmoid'
@@ -25,7 +28,7 @@ class Brain {
     randomize() {
         for (const biases of this.biases) {
             for (let i = 0; i < biases.tolist().length; i++) {
-                biases.set(i, randomGaussian())
+                biases.set(i, p.randomGaussian())
             }
         }
 
@@ -34,7 +37,7 @@ class Brain {
 
             for (let i = 0; i < shape[0]; i++) {
                 for (let j = 0; j < shape[1]; j++) {
-                    weights.set(i, j, randomGaussian(0, 1 / Math.sqrt(shape[1])))
+                    weights.set(i, j, p.randomGaussian(0, 1 / p.sqrt(shape[1])))
                 }
             }
         }
@@ -65,6 +68,21 @@ class Brain {
         }
     }
 
+    crossover(parentBrain) {
+        const childBrain = new Brain(this.inputs, this.layers, this.outputs)
+        childBrain.activationFunction = this.activationFunction
+
+        for (let i = 0; i < this.biases.length; i++) {
+            for (let j = 0; j < this.biases[i].shape[0]; j++) {
+                const roll = p.random() < 0.5
+                childBrain.biases[i].set(j, roll ? this.biases[i].get(j) : parentBrain.biases[i].get(j))
+                childBrain.weights[i].set(j, roll ? this.weights[i].get(j) : parentBrain.weights[i].get(j))
+            }
+        }
+
+        return childBrain
+    }
+
     mutate(rate) {
         const mutations = []
 
@@ -73,12 +91,12 @@ class Brain {
         }
 
         for (let i = 0; i < this.biases.length; i++) {
-            for (let j = 0; j < this.biases[i].tolist().length; j++) {
-                if (random() < rate) {
+            for (let j = 0; j < this.biases[i].shape[0]; j++) {
+                if (p.random() < rate) {
                     mutations.push({'layer': i, mutations: []})
                     for (let w = 0; w < this.weights[i].tolist()[j].length; w++) {
                         const currentValue = this.weights[i].get(j, w)
-                        const mutation = randomGaussian(0, 1 / Math.sqrt(this.weights[i].shape[1]))
+                        const mutation = p.randomGaussian(0, 1 / p.sqrt(this.weights[i].shape[1]))
 
                         this.weights[i].set(j, w, currentValue + mutation)
 

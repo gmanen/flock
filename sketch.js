@@ -1,184 +1,213 @@
 // Customizable parameters
-setParameter('displayPov', getParameter('displayPov', true))
-setParameter('frenzySize', getParameter('frenzySize', 30))
-setParameter('schoolSize', getParameter('schoolSize', 15))
-setParameter('shoakMutationRate', getParameter('shoakMutationRate', 10))
-setParameter('foishMutationRate', getParameter('foishMutationRate', 10))
-setParameter('foishReproductionRate', getParameter('foishReproductionRate', 0.1))
-setParameter('shoakHungerRate', getParameter('shoakHungerRate', 0.08))
-setParameter('shoakNNComplexity', getParameter('shoakNNComplexity', 1))
-setParameter('foishNNComplexity', getParameter('foishNNComplexity', 1))
-setParameter('shoakNNSize', getParameter('shoakNNSize', 12))
-setParameter('foishNNSize', getParameter('foishNNSize', 12))
-setParameter('shoakSightRadius', getParameter('shoakSightRadius', 300))
-setParameter('foishSightRadius', getParameter('foishSightRadius', 200))
-setParameter('shoakFov', getParameter('shoakFov', 90))
-setParameter('foishFov', getParameter('foishFov', 90))
-setParameter('shoakResolution', getParameter('shoakResolution', 1))
-setParameter('foishResolution', getParameter('foishResolution', 1))
-let debug = getParameter('debug')
+window.displayPov = getParameter('displayPov', true)
+window.displayStats = getParameter('displayStats', false)
+window.frenzySize = getParameter('frenzySize', 30)
+window.schoolSize = getParameter('schoolSize', 5)
+window.shoakMutationRate = getParameter('shoakMutationRate', 10)
+window.foishMutationRate = getParameter('foishMutationRate', 10)
+window.shoakReproductionRate = getParameter('shoakReproductionRate', 0.1)
+window.foishReproductionRate = getParameter('foishReproductionRate', 0.1)
+window.shoakHungerRate = getParameter('shoakHungerRate', 0.08)
+window.shoakNNComplexity = getParameter('shoakNNComplexity', 1)
+window.foishNNComplexity = getParameter('foishNNComplexity', 1)
+window.shoakNNSize = getParameter('shoakNNSize', 12)
+window.foishNNSize = getParameter('foishNNSize', 12)
+window.shoakSightRadius = getParameter('shoakSightRadius', 300)
+window.foishSightRadius = getParameter('foishSightRadius', 200)
+window.shoakFov = getParameter('shoakFov', 90)
+window.foishFov = getParameter('foishFov', 300)
+window.shoakResolution = getParameter('shoakResolution', 1)
+window.foishResolution = getParameter('foishResolution', 1)
+window.debug = getParameter('debug')
 
 const padding = 10 // Distance from the sides at which the motiles are going to be pushed away
-const topDownWidth = 600
-const povWidth = 600
-const sceneHeight = 400
+const topDownWidth = 1200
+const topDownHeight = 600
+const povWidth = 500
+const povHeight = 400
 
 let frenzy = null
 let school = null
-let qtree  = null
+let qtree = null
 
-function setup() {
-    const canvas = createCanvas(getParameter('displayPov') ? topDownWidth + povWidth : topDownWidth, sceneHeight);
-    canvas.parent('sketch');
+const p = new p5(sketch => {
+    sketch.setup = function () {
+        const canvas = sketch.createCanvas(topDownWidth, topDownHeight)
+        canvas.parent('top-down-sketch')
 
-    init()
-}
+        init()
+    }
 
-function draw() {
-    background(175)
+    sketch.draw = function () {
+        sketch.background(175)
 
-    if (frenzy.isExtinct()) {
-        for (const shoak of frenzy.nextGeneration()) {
-            qtree.insert(new Point(shoak.id, 'shoak', shoak.position.x, shoak.position.y, shoak.shape, {
-                color: shoak.color,
+        if (frenzy.isExtinct()) {
+            for (const shoak of frenzy.nextGeneration()) {
+                insertQtree(qtree, shoak, 'shoak')
+            }
+        }
+
+        if (school.isExtinct()) {
+            for (const foish of school.nextGeneration()) {
+                insertQtree(qtree, foish, 'foish')
+            }
+        }
+
+        for (const shoak of frenzy.reproduce()) {
+            insertQtree(qtree, shoak, 'shoak')
+        }
+
+        for (const foish of school.reproduce()) {
+            insertQtree(qtree, foish, 'foish')
+        }
+
+        for (const shoak of frenzy.population()) {
+            for (const foish of shoak.eat(qtree)) {
+                school.remove(foish)
+                qtree.remove(foish.id)
+            }
+
+            shoak.bounce(padding, topDownWidth - padding, padding, topDownHeight - padding)
+            shoak.think(qtree, sketch)
+        }
+
+        for (const foish of school.population()) {
+            foish.school(qtree)
+            foish.bounce(padding, topDownWidth - padding, padding, topDownHeight - padding)
+            foish.think(qtree, sketch)
+        }
+
+        // Done on the population instead of on every individual because it handles dying individuals and storing their data for later selection
+        for (const shoak of frenzy.hunger()) {
+            frenzy.remove(shoak)
+            qtree.remove(shoak.id)
+        }
+
+        frenzy.age()
+        school.hunger()
+        school.age()
+
+        for (const shoak of frenzy.population()) {
+            shoak.update()
+            qtree.move(shoak.id, shoak.position.x, shoak.position.y, shoak.shape, {
                 mass: shoak.mass,
                 position: shoak.position.copy(),
-                velocity: shoak.velocity.copy(),
-                subject: shoak
-            }))
+                velocity: shoak.velocity.copy()
+            })
         }
-    }
 
-    if (school.isExtinct()) {
-        for (const foish of school.nextGeneration()) {
-            qtree.insert(new Point(foish.id, 'foish', foish.position.x, foish.position.y, foish.shape, {
-                color: foish.color,
+        for (const foish of school.population()) {
+            foish.update()
+            qtree.move(foish.id, foish.position.x, foish.position.y, foish.shape, {
                 mass: foish.mass,
                 position: foish.position.copy(),
-                velocity: foish.velocity.copy(),
-                subject: foish
-            }))
-        }
-    }
-
-    for (const foish of school.reproduce()) {
-        qtree.insert(new Point(foish.id, 'foish', foish.position.x, foish.position.y, foish.shape, {
-            color: foish.color,
-            mass: foish.mass,
-            position: foish.position.copy(),
-            velocity: foish.velocity.copy(),
-            subject: foish
-        }))
-    }
-
-    for (const shoak of frenzy.population()) {
-        for (const foish of shoak.eat(qtree)) {
-            school.remove(foish)
-            qtree.remove(foish.id)
+                velocity: foish.velocity.copy()
+            })
         }
 
-        shoak.bounce(padding, topDownWidth - padding, padding, sceneHeight - padding)
-        shoak.think(qtree)
+        sketch.strokeWeight(1)
+        sketch.stroke(255)
+        sketch.fill(255)
+        sketch.text('Generation: ' + frenzy.generation, 5, topDownHeight - 5)
+        sketch.text('Alive: ' + frenzy.population().length, 5, topDownHeight - 20)
+        sketch.text('Current best: ' + (frenzy.aliveBest ? frenzy.aliveBest.score : 0).toFixed(2), 5, topDownHeight - 35)
+        sketch.text('All time best: ' + frenzy.allTimeBest.toFixed(2), 5, topDownHeight - 50)
+        sketch.text('Frame rate: ' + Math.round(p.frameRate()), 5, topDownHeight - 65)
+
+        // Drawing the top down scene
+        for (const shoak of frenzy.population()) {
+            shoak.show(sketch)
+        }
+
+        for (const foish of school.population()) {
+            foish.show(sketch)
+        }
+
+        if (debug) {
+            qtree.show(sketch)
+        }
+
+        if (frenzy.aliveBest) {
+            p.stroke(255)
+            p.strokeWeight(2)
+            p.noFill()
+            p.circle(frenzy.aliveBest.position.x, frenzy.aliveBest.position.y, frenzy.aliveBest.radius * 2 + 1)
+        }
+
+        if (school.aliveBest) {
+            p.stroke(255)
+            p.strokeWeight(2)
+            p.noFill()
+            p.circle(school.aliveBest.position.x, school.aliveBest.position.y, school.aliveBest.radius * 2 + 1)
+        }
     }
+})
 
-    for (const foish of school.population()) {
-        foish.school(qtree)
-        foish.bounce(padding, topDownWidth - padding, padding, sceneHeight - padding)
-        foish.think(qtree)
-    }
+for (container of ['shoak-pov-sketch', 'foish-pov-sketch']) {
+    new p5(sketch => {
+        sketch.setup = function () {
+            sketch.createCanvas(povWidth, povHeight)
+        }
 
-    // Done on the population instead of on every individual because it handles dying individuals and storing their data for later selection
-    for (const shoak of frenzy.hunger()) {
-        qtree.remove(shoak.id)
-    }
+        sketch.draw = function () {
+            sketch.background(175)
 
-    frenzy.age()
-    school.hunger()
-    school.age()
+            let best = null
 
-    for (const shoak of frenzy.population()) {
-        shoak.update()
-        qtree.move(shoak.id, shoak.position.x, shoak.position.y, shoak.shape, {
-            mass: shoak.mass,
-            position: shoak.position.copy(),
-            velocity: shoak.velocity.copy()
-        })
-    }
+            if ('shoak' === sketch.canvas.parentElement.id.substr(0, 'shoak'.length)) {
+                best = frenzy.aliveBest
+            } else if ('foish' === sketch.canvas.parentElement.id.substr(0, 'foish'.length)) {
+                best = school.aliveBest
+            }
 
-    for (const foish of school.population()) {
-        foish.update()
-        qtree.move(foish.id, foish.position.x, foish.position.y, foish.shape, {
-            mass: foish.mass,
-            position: foish.position.copy(),
-            velocity: foish.velocity.copy()
-        })
-    }
+            if (best && window.displayPov) {
+                const maxDist = best.sightRadius
+                const w = povWidth / best.sight.length
+                const maxDistSquared = maxDist * maxDist
 
-    strokeWeight(1)
-    stroke(255)
-    fill(255)
-    text('Generation: ' + frenzy.generation, 5, sceneHeight - 5)
-    text('Alive: ' + frenzy.population().length, 5, sceneHeight - 20)
-    text('Current best: ' + (frenzy.aliveBest ? frenzy.aliveBest.score : 0).toFixed(2), 5, sceneHeight - 35)
-    text('All time best: ' + frenzy.allTimeBest.toFixed(2), 5, sceneHeight - 50)
-    text('Frame rate: ' + Math.round(frameRate()), 5, sceneHeight - 65)
+                for (let i = 0; i < best.sight.length; i++) {
+                    const {distance, color: pointColor} = best.sight[i]
 
-    // Drawing the top down scene
-    for (const shoak of frenzy.population()) {
-        shoak.show()
-    }
+                    if (distance >= 0) {
+                        const distanceSquared = distance * distance
+                        const light = Math.floor(sketch.map(distanceSquared, 0, maxDistSquared, 80, 20, true))
+                        const h = sketch.map(distance, 0, maxDist, povHeight, 0, true)
 
-    for (const foish of school.population()) {
-        foish.show()
-    }
+                        sketch.noStroke()
+                        sketch.fill(sketch.color('hsb(' + pointColor + ', 100%, ' + light + '%)'))
+                        sketch.rectMode(sketch.CENTER)
 
-    if (debug) {
-        qtree.show()
-    }
-
-    if (frenzy.aliveBest) {
-        const maxDist = frenzy.aliveBest.sightRadius
-        const w = povWidth / frenzy.aliveBest.sight.length
-        const maxDistSquared = maxDist * maxDist
-
-        if (getParameter('displayPov')) {
-            // Drawing the POV scene
-            push()
-            translate(topDownWidth, 0)
-
-            for (let i = 0; i < frenzy.aliveBest.sight.length; i++) {
-                const {distance, color: pointColor} = frenzy.aliveBest.sight[i]
-
-                if (distance >= 0) {
-                    const distanceSquared = distance * distance
-                    const light = Math.floor(map(distanceSquared, 0, maxDistSquared, 80, 20, true))
-                    const h = map(distance, 0, maxDist, sceneHeight, 0, true)
-
-                    noStroke()
-                    fill(color('hsb(' + pointColor + ', 100%, ' + light + '%)'))
-                    rectMode(CENTER)
-
-                    rect(i * w + w / 2, sceneHeight / 2, w + 1, h)
+                        sketch.rect(i * w + w / 2, povHeight / 2, w + 1, h)
+                    }
                 }
             }
-            pop()
         }
-    }
+    }, container)
+}
+
+function insertQtree(qtree, subject, type) {
+    qtree.insert(new Point(subject.id, type, subject.position.x, subject.position.y, subject.shape, {
+        color: subject.color,
+        mass: subject.mass,
+        position: subject.position.copy(),
+        velocity: subject.velocity.copy(),
+        subject: subject
+    }))
 }
 
 function init() {
-    const frenzySize = debug ? 1 : parseInt(getParameter('frenzySize'))
-    const schoolSize = frenzySize * parseInt(getParameter('schoolSize'))
+    const frenzySize = debug ? 1 : parseInt(window.frenzySize)
+    const schoolSize = debug ? 5 : frenzySize * parseInt(window.schoolSize)
 
-    qtree = new Quadtree(topDownWidth / 2, sceneHeight / 2, topDownWidth / 2, sceneHeight / 2, (frenzySize + schoolSize) / 10)
+    qtree = new Quadtree(topDownWidth / 2, topDownHeight / 2, topDownWidth / 2, topDownHeight / 2, (frenzySize + schoolSize) / 10)
 
     frenzy = new Population(
         frenzySize,
-        0.0005,
-        parseFloat(getParameter('shoakMutationRate')) / 100,
+        parseFloat(window.shoakReproductionRate) / 100,
+        parseFloat(window.shoakMutationRate) / 100,
         (id) => Shoak(id)
     )
-    
+
     for (const shoak of frenzy.populate()) {
         qtree.insert(new Point(shoak.id, 'shoak', shoak.position.x, shoak.position.y, shoak.shape, {
             color: shoak.color,
@@ -191,9 +220,10 @@ function init() {
 
     school = new Population(
         schoolSize,
-        parseFloat(getParameter('foishReproductionRate')) / 100,
-        parseFloat(getParameter('foishMutationRate')) / 100,
-        (id) => Foish(id)
+        parseFloat(window.foishReproductionRate) / 100,
+        parseFloat(window.foishMutationRate) / 100,
+        (id) => Foish(id),
+        schoolSize
     )
 
     for (const foish of school.populate()) {
@@ -208,40 +238,99 @@ function init() {
 }
 
 function getParameter(name, defaultValue) {
-    const value = JSON.parse(window.sessionStorage.getItem(name))
+    const value = window.sessionStorage.getItem(name)
 
-    return null === value ? defaultValue || null : value
+    return null === value ? defaultValue || null : JSON.parse(value)
 }
 
 function setParameter(name, value) {
+    window[name] = value
+
     return window.sessionStorage.setItem(name, JSON.stringify(value))
+}
+
+const chart = am4core.create("chart", am4charts.XYChart)
+chart.xAxes.push(new am4charts.ValueAxis())
+chart.yAxes.push(new am4charts.ValueAxis())
+const magSeries = chart.series.push(new am4charts.LineSeries())
+magSeries.name = "Magnitude"
+magSeries.stroke = am4core.color("#0000FF")
+magSeries.dataFields.valueY = "magnitude"
+magSeries.dataFields.valueX = "frame"
+const angleSeries = chart.series.push(new am4charts.LineSeries())
+angleSeries.name = "Angle"
+angleSeries.stroke = am4core.color("#FF0000")
+angleSeries.dataFields.valueY = "angle"
+angleSeries.dataFields.valueX = "frame"
+chart.legend = new am4charts.Legend()
+
+let currentCharted = 'aliveBest'
+
+function refreshChart(toChart) {
+    const chartTitle = document.getElementById('chart-title')
+
+    if ('aliveBest' === toChart && frenzy.aliveBest) {
+        chart.data = frenzy.aliveBest.neuralNetResults
+        chartTitle.innerHTML = 'Best alive shoak (fitness: '+Math.pow(frenzy.aliveBest.fitness(), 1/4).toFixed(2)+')'
+    } else if ('aliveBest' !== toChart) {
+        const corpses = frenzy.graveyard.corpses.sort((a, b) => b.fitness() - a.fitness())
+
+        if (corpses.length) {
+            if (toChart >= corpses.length) {
+                toChart = corpses.length - 1
+            }
+
+            chart.data = corpses[toChart].neuralNetResults
+            chartTitle.innerHTML = 'Dead shoak '+(toChart+1)+' / '+corpses.length+' (fitness: '+Math.pow(corpses[toChart].fitness(), 1/4).toFixed(2)+')'
+        }
+    }
 }
 
 (function () {
     const sliders = [
-        {'variableName': 'frenzySize', 'sliderName': 'shoaks-population'},
-        {'variableName': 'shoakMutationRate', 'sliderName': 'shoaks-mutation-rate'},
-        {'variableName': 'shoakHungerRate', 'sliderName': 'shoaks-hunger-rate'},
-        {'variableName': 'shoakNNComplexity', 'sliderName': 'shoaks-nn-complexity'},
-        {'variableName': 'shoakNNSize', 'sliderName': 'shoaks-nn-size'},
-        {'variableName': 'shoakSightRadius', 'sliderName': 'shoaks-perception-radius'},
-        {'variableName': 'shoakFov', 'sliderName': 'shoaks-fov'},
-        {'variableName': 'shoakResolution', 'sliderName': 'shoaks-resolution'},
+        {variableName: 'frenzySize', sliderName: 'shoaks-population'},
+        {variableName: 'shoakMutationRate', sliderName: 'shoaks-mutation-rate'},
+        {variableName: 'shoakReproductionRate', sliderName: 'shoaks-reproduction-rate'},
+        {variableName: 'shoakHungerRate', sliderName: 'shoaks-hunger-rate'},
+        {variableName: 'shoakNNComplexity', sliderName: 'shoaks-nn-complexity'},
+        {variableName: 'shoakNNSize', sliderName: 'shoaks-nn-size'},
+        {variableName: 'shoakSightRadius', sliderName: 'shoaks-perception-radius'},
+        {variableName: 'shoakFov', sliderName: 'shoaks-fov'},
+        {variableName: 'shoakResolution', sliderName: 'shoaks-resolution'},
+        {variableName: 'schoolSize', sliderName: 'foish-population'},
+        {variableName: 'foishMutationRate', sliderName: 'foish-mutation-rate'},
+        {variableName: 'foishReproductionRate', sliderName: 'foish-reproduction-rate'},
+        {variableName: 'foishNNComplexity', sliderName: 'foish-nn-complexity'},
+        {variableName: 'foishNNSize', sliderName: 'foish-nn-size'},
+        {variableName: 'foishSightRadius', sliderName: 'foish-perception-radius'},
+        {variableName: 'foishFov', sliderName: 'foish-fov'},
+        {variableName: 'foishResolution', sliderName: 'foish-resolution'},
     ]
-    const currentDisplayPov = getParameter('displayPov')
 
-    document.getElementById('sketch').style.width = (currentDisplayPov ? topDownWidth + povWidth : topDownWidth) + 'px'
-    document.getElementById('display-pov').checked = currentDisplayPov
+    document.getElementById('top-down-sketch').style.width = topDownWidth + 'px'
+    const povContainer = document.getElementById('pov-container')
+    povContainer.style.display = window.displayPov && !debug ? 'flex' : 'none'
+    document.getElementById('display-pov').checked = window.displayPov
+    document.getElementById('chart-container').style.display = window.displayStats && !debug ? 'block' : 'none'
+    document.getElementById('display-stats').checked = window.displayStats
+
+    for (const element of povContainer.children) {
+        element.style.width = povWidth + 'px'
+    }
 
     document.getElementById('debug').checked = debug
+    document.getElementById('display-pov').disabled = debug
+    document.getElementById('shoaks-population-slider').disabled = debug
+    document.getElementById('chart-container').style.display = debug ? 'block' : 'none'
 
     document.getElementById('display-pov').addEventListener('change', (event) => {
-        const newWidth = event.target.checked ? topDownWidth + povWidth : topDownWidth
-
         setParameter('displayPov', event.target.checked)
-        resizeCanvas(newWidth, sceneHeight)
+        document.getElementById('pov-container').style.display = event.target.checked ? 'flex' : 'none'
+    })
 
-        document.getElementById('sketch').style.width = newWidth + 'px'
+    document.getElementById('display-stats').addEventListener('change', (event) => {
+        setParameter('displayStats', event.target.checked)
+        document.getElementById('chart-container').style.display = event.target.checked ? 'block' : 'none'
     })
 
     document.getElementById('debug').addEventListener('change', (event) => {
@@ -249,11 +338,21 @@ function setParameter(name, value) {
         document.getElementById('shoaks-population-slider').disabled = event.target.checked
         debug = event.target.checked
 
+        document.getElementById('display-pov').disabled = debug
+        document.getElementById('display-stats').disabled = debug
+
+        document.getElementById('pov-container').style.display = debug || !window.displayPov ? 'none' : 'flex'
+        document.getElementById('chart-container').style.display = debug ? 'block' : 'none'
+
+        if (debug) {
+            refreshChart(currentCharted)
+        }
+
         init()
     })
 
     for (const slider of sliders) {
-        const currentValue = getParameter(slider.variableName)
+        const currentValue = window[slider.variableName]
 
         for (const element of document.getElementsByClassName(slider.sliderName + '-current')) {
             element.innerHTML = currentValue
@@ -271,4 +370,42 @@ function setParameter(name, value) {
             init()
         })
     }
+
+    document.getElementById('chart-prev').addEventListener('click', event => {
+        event.preventDefault()
+
+        if ('aliveBest' === currentCharted) {
+            currentCharted = frenzy.graveyard.corpses.length - 1
+        } else {
+            currentCharted--
+
+            if (currentCharted < 0) {
+                currentCharted = 'aliveBest'
+            }
+        }
+
+        refreshChart(currentCharted)
+    })
+
+    document.getElementById('chart-next').addEventListener('click', event => {
+        event.preventDefault()
+
+        if ('aliveBest' === currentCharted) {
+            currentCharted = 0
+        } else {
+            currentCharted++
+
+            if (currentCharted >= frenzy.graveyard.corpses.length) {
+                currentCharted = 'aliveBest'
+            }
+        }
+
+        refreshChart(currentCharted)
+    })
+
+    document.getElementById('chart-refresh').addEventListener('click', event => {
+        event.preventDefault()
+
+        refreshChart(currentCharted)
+    })
 })()

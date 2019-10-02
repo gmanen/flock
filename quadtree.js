@@ -73,15 +73,15 @@ class Line {
         const m = (this.point2.y - this.point1.y) / (this.point2.x - this.point1.x)
         const n = this.point1.y - m * this.point1.x
 
-        const a = 1 + sq(m)
+        const a = 1 + p.sq(m)
         const b = -h * 2 + (m * (n - k)) * 2
-        const c = sq(h) + sq(n - k) - sq(r)
-        const d = sq(b) - 4 * a * c
+        const c = p.sq(h) + p.sq(n - k) - p.sq(r)
+        const d = p.sq(b) - 4 * a * c
 
         if (d >= 0) {
             const intersections = [
-                (-b + sqrt(sq(b) - 4 * a * c)) / (2 * a),
-                (-b - sqrt(sq(b) - 4 * a * c)) / (2 * a)
+                (-b + p.sqrt(p.sq(b) - 4 * a * c)) / (2 * a),
+                (-b - p.sqrt(p.sq(b) - 4 * a * c)) / (2 * a)
             ]
 
             if (0 === d && intersections[0] > this.point1.x === this.point2.x > this.point1.x) {
@@ -321,6 +321,7 @@ class Quadtree {
             }
 
             this.regions = []
+            this.parent.cleanup()
         }
     }
 
@@ -393,19 +394,19 @@ class Quadtree {
         return this.regions.length > 0
     }
 
-    show() {
-        stroke(255)
-        strokeWeight(1)
-        noFill()
-        rectMode(CENTER)
-        rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
+    show(sketch) {
+        sketch.stroke(255)
+        sketch.strokeWeight(1)
+        sketch.noFill()
+        sketch.rectMode(sketch.CENTER)
+        sketch.rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
 
         if (this.isSubdivided()) {
             this.regions.map(region => {
-                region.show()
+                region.show(sketch)
             })
         } else {
-            text(this.count(), this.boundary.x, this.boundary.y)
+            sketch.text(this.count(), this.boundary.x, this.boundary.y)
         }
     }
 }

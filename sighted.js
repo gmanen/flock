@@ -1,6 +1,6 @@
 const canSee = self => ({
     // storedSight should be an array. It will be reset and then filled with the distance values of each closest point colliding with one of the rays to display the POV scene
-    see: (qtree, types, storedSight) => {
+    see: (qtree, types, storedSight, sketch) => {
         types = types || []
 
         if (Array.isArray(storedSight)) {
@@ -9,7 +9,7 @@ const canSee = self => ({
 
         const sight = []
         const angleVector = p5.Vector.fromAngle(self.velocity.heading(), 1)
-        angleVector.rotate(radians(-self.fov / 2)) // Starting angle for the rays
+        angleVector.rotate(p.radians(-self.fov / 2)) // Starting angle for the rays
 
         const points = qtree.query(
             new Circle(self.position.x, self.position.y, self.sightRadius),
@@ -17,14 +17,14 @@ const canSee = self => ({
         )
 
         for (let i = 0; i < self.fov; i += (1 / self.resolution)) {
-            const rayLine = new Line(self.position, createVector(self.position.x + angleVector.x, self.position.y + angleVector.y))
+            const rayLine = new Line(self.position, p.createVector(self.position.x + angleVector.x, self.position.y + angleVector.y))
             let closest = Infinity
             let closestPoint = null
             let intersectingColor = null
 
             for (const point of points) {
                 for (const intersectingPoint of rayLine.intersectsShape(point.shape)) {
-                    const d = dist(self.position.x, self.position.y, intersectingPoint.x, intersectingPoint.y)
+                    const d = p.dist(self.position.x, self.position.y, intersectingPoint.x, intersectingPoint.y)
 
                     if (d < closest) {
                         closest = d
@@ -39,15 +39,15 @@ const canSee = self => ({
             if (debug) {
                 const drawRay = p5.Vector.fromAngle(angleVector.heading(), closest === Infinity ? self.sightRadius : closest)
 
-                stroke(255, 255, 255, 20)
-                strokeWeight(5)
-                line(self.position.x, self.position.y, self.position.x + drawRay.x, self.position.y + drawRay.y)
+                sketch.stroke(255, 255, 255, 20)
+                sketch.strokeWeight(5)
+                sketch.line(self.position.x, self.position.y, self.position.x + drawRay.x, self.position.y + drawRay.y)
 
                 if (closestPoint) {
-                    strokeWeight(1)
-                    stroke(255, 0, 0)
-                    fill(255, 0, 0)
-                    circle(closestPoint.x, closestPoint.y, 2)
+                    sketch.strokeWeight(1)
+                    sketch.stroke(255, 0, 0)
+                    sketch.fill(255, 0, 0)
+                    sketch.circle(closestPoint.x, closestPoint.y, 2)
                 }
             }
 
@@ -55,24 +55,28 @@ const canSee = self => ({
              * Input for the shark's Neural Net, for each ray the distance to the closest fish is a value from 0 to 1
              * The closest fishes will have a value closer to 1, furthest a value closer to 0
              */
-            sight.push(map(distance, 0, self.sightRadius, 1, 0, true))
+            sight.push(p.map(distance, 0, self.sightRadius, 1, 0, true))
 
             if (Array.isArray(storedSight)) { // the results can be displayed in a POV Scene
                 // -1 means no fish intersects that ray so nothing should be displayed in the POV scene
-                storedSight.push({
-                    'distance': Infinity === closest ? -1 : (distance * (cos(angleVector.heading() - self.velocity.heading()))),
-                    'color': intersectingColor
-                })
+                const projectionAngle = angleVector.heading() - self.velocity.heading()
+
+                if (projectionAngle <= p.PI / 4 && projectionAngle >= -p.PI / 4) {
+                    storedSight.push({
+                        'distance': Infinity === closest ? -1 : (distance * p.cos(angleVector.heading() - self.velocity.heading())),
+                        'color': intersectingColor
+                    })
+                }
             }
 
-            angleVector.rotate(radians(1 / self.resolution))
+            angleVector.rotate(p.radians(1 / self.resolution))
         }
 
         if (debug) {
-            noFill()
-            strokeWeight(1)
-            stroke(255)
-            circle(self.position.x, self.position.y, self.sightRadius * 2)
+            sketch.noFill()
+            sketch.strokeWeight(1)
+            sketch.stroke(255)
+            sketch.circle(self.position.x, self.position.y, self.sightRadius * 2)
         }
 
         return sight

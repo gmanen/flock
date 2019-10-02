@@ -4,7 +4,6 @@ const generatePoly = self => {
 
     poly.push({x: self.position.x + head.x, y: self.position.y + head.y})
     head.rotate(self.angle)
-    head.setMag(self.radius / 2)
     poly.push({x: self.position.x + head.x, y: self.position.y + head.y})
     head.rotate(-2 * self.angle)
     poly.push({x: self.position.x + head.x, y: self.position.y + head.y})
@@ -14,18 +13,18 @@ const generatePoly = self => {
 
 const Foish = (id, brain, foishColor) => {
     const baseSpeed = 4
-    const baseMass = random(0.5, 1.5)
+    const baseMass = p.random(2, 4)
     const velocity = p5.Vector.random2D()
     velocity.setMag(baseSpeed)
 
-    const fov = parseInt(getParameter('foishFov'))
-    const resolution = parseFloat(getParameter('foishResolution'))
+    const fov = parseInt(window.foishFov)
+    const resolution = parseFloat(window.foishResolution)
 
     if (!brain) {
         const layers = []
 
-        for (let i = 0; i < parseInt(getParameter('foishNNComplexity')); i++) {
-            layers.push(parseInt(getParameter('foishNNSize')))
+        for (let i = 0; i < parseInt(window.foishNNComplexity); i++) {
+            layers.push(parseInt(window.foishNNSize))
         }
 
         brain = new Brain(fov * resolution, layers, 2, 'relu')
@@ -35,29 +34,30 @@ const Foish = (id, brain, foishColor) => {
     const self = {
         id: 'foish-'+id,
         baseSpeed,
-        minSpeed: 2,
+        minSpeed: 1,
         maxSpeed: 8,
         maxForce: 0.2,
         mass: baseMass,
-        position: createVector(random(topDownWidth), random(sceneHeight)),
+        position: p.createVector(p.random(topDownWidth), p.random(topDownHeight)),
         velocity: velocity,
-        acceleration: createVector(),
-        radius: 10 * baseMass,
+        acceleration: p.createVector(),
+        radius: 2 * baseMass,
         alignPerceptionRadius: 60,
         cohesionPerceptionRadius: 75,
         separationPerceptionRadius: 30,
-        sightRadius: parseInt(getParameter('foishSightRadius')),
+        sightRadius: parseInt(window.foishSightRadius),
         alignWeight: 1,
         cohesionWeight: 1,
         separationWeight: 1.5,
-        flockingFov: 8 * PI / 10,
+        flockingFov: 8 * p.PI / 10,
         fov,
         resolution,
-        angle: 3 * PI / 4,
+        angle: 5 * p.PI / 6,
         sight: [],
         brain,
+        currentAge: 0,
         score: 0,
-        color: foishColor || 240 + Math.floor(random(-30, 31)),
+        color: foishColor || 240 + Math.floor(p.random(-30, 31)),
         generateShape: generatePoly
     }
 
@@ -65,13 +65,32 @@ const Foish = (id, brain, foishColor) => {
 
     const foishBehaviors = self => ({
         school: qtree => {
-            self.steer(self.align(qtree))
-            self.steer(self.cohesion(qtree))
-            self.steer(self.separation(qtree))
+            const align = self.align(qtree)
+            const cohesion = self.cohesion(qtree)
+            const separation = self.separation(qtree)
+            const isAlign = align.x !== 0 && align.y !== 0
+            const isCohesion = cohesion.x !== 0 && cohesion.y !== 0
+            const isSeparation = separation.x !== 0 && separation.y !== 0
+
+            if (isAlign) {
+                self.steer(align)
+            }
+
+            if (isCohesion) {
+                self.steer(cohesion)
+            }
+
+            if (isSeparation) {
+                self.steer(separation)
+            }
+
+            if (!(isAlign || isCohesion || isSeparation)) {
+                self.steer(p5.Vector.fromAngle(self.velocity.heading(), self.baseSpeed))
+            }
         },
 
         align: qtree => {
-            const alignment = createVector()
+            const alignment = p.createVector()
             let alignmentTotal = 0
 
             for (const point of qtree.query(new Circle(self.position.x, self.position.y, self.alignPerceptionRadius), {types: ['foish']})) {
@@ -97,7 +116,7 @@ const Foish = (id, brain, foishColor) => {
         },
 
         cohesion: qtree => {
-            const cohesion = createVector()
+            const cohesion = p.createVector()
             let cohesionTotal = 0
 
             for (let point of qtree.query(new Circle(self.position.x, self.position.y, self.cohesionPerceptionRadius), {types: ['foish']})) {
@@ -126,7 +145,7 @@ const Foish = (id, brain, foishColor) => {
         },
 
         separation: qtree => {
-            const separation = createVector()
+            const separation = p.createVector()
             let separationTotal = 0
 
             for (let point of qtree.query(new Circle(self.position.x, self.position.y, self.separationPerceptionRadius), {types: ['foish']})) {
@@ -141,7 +160,7 @@ const Foish = (id, brain, foishColor) => {
                     continue
                 }
 
-                const d = dist(self.position.x, self.position.y, otherPosition.x, otherPosition.y)
+                const d = p.dist(self.position.x, self.position.y, otherPosition.x, otherPosition.y)
                 const dSquared = d * d
 
                 if (0 !== dSquared) {
@@ -161,33 +180,35 @@ const Foish = (id, brain, foishColor) => {
             return separation
         },
 
-        think: qtree => {
-            const sight = self.see(qtree, ['shoak'], self.sight)
+        think: (qtree, sketch) => {
+            const sight = self.see(qtree, ['shoak'], self.sight, sketch)
 
             if (debug) {
                 const velocity = p5.Vector.fromAngle(self.velocity.heading(), 100)
-                stroke(0, 0, 255)
-                strokeWeight(2)
-                line(self.position.x, self.position.y, self.position.x + velocity.x, self.position.y + velocity.y)
+                sketch.stroke(0, 0, 255)
+                sketch.strokeWeight(2)
+                sketch.line(self.position.x, self.position.y, self.position.x + velocity.x, self.position.y + velocity.y)
             }
 
-            const result = self.brain.evaluate(sight)
-            const mag = constrain(result[0], self.minSpeed, self.maxSpeed)
-            const direction = constrain(result[1], -PI / 12, PI / 12)
-            const computed = p5.Vector.fromAngle(self.velocity.heading(), mag)
-            computed.rotate(direction)
+            if (sight.reduce((total, currentValue) => total + currentValue, 0)) {
+                const halfFov = p.radians(self.fov / 2)
+                const result = self.brain.evaluate(sight)
+                const computed = p5.Vector.fromAngle(self.velocity.heading(), p.map(p.atan(result[0] / p.PI), -0.5, 0.5, self.minSpeed, self.maxSpeed))
 
-            self.applyForce(computed)
+                computed.rotate(p.map(p.atan(result[1]) / p.PI, -0.5, 0.5, -halfFov, halfFov))
+                self.steer(computed, 2 * self.maxForce)
 
-            if (debug) {
-                computed.setMag(50)
-                stroke(255, 0, 0)
-                strokeWeight(2)
-                line(self.position.x, self.position.y, self.position.x + computed.x, self.position.y + computed.y)
+                if (debug) {
+                    computed.setMag(50)
+                    sketch.stroke(255, 0, 0)
+                    sketch.strokeWeight(2)
+                    sketch.line(self.position.x, self.position.y, self.position.x + computed.x, self.position.y + computed.y)
+                }
             }
         },
 
         age: () => {
+            self.currentAge++
             self.score++
         },
 
@@ -195,7 +216,11 @@ const Foish = (id, brain, foishColor) => {
 
         },
 
-        reproduce: (id) =>  {
+        reproduce: (id, parent) => {
+            return Foish(id, self.brain.crossover(parent.brain), Math.floor((self.color + parent.color) / 2))
+        },
+
+        cloneSelf: (id) =>  {
             return Foish(id, self.brain.clone(), self.color)
         },
 
@@ -207,21 +232,19 @@ const Foish = (id, brain, foishColor) => {
             return Math.pow(self.score, 4)
         },
 
-        species: () => 'foish',
+        show: (sketch) => {
+            const foishColor = p.color('hsba(' + self.color + ', 100%, 80%, 1)')
 
-        show: () => {
-            const foishColor = color('hsba(' + self.color + ', 100%, 80%, 1)')
-
-            strokeWeight(1)
-            stroke(foishColor)
-            fill(foishColor)
-            beginShape(TRIANGLES)
+            sketch.strokeWeight(1)
+            sketch.stroke(foishColor)
+            sketch.fill(foishColor)
+            sketch.beginShape(p.TRIANGLES)
 
             for (const point of self.shape) {
-                vertex(point.x, point.y)
+                sketch.vertex(point.x, point.y)
             }
 
-            endShape(CLOSE)
+            sketch.endShape(p.CLOSE)
         }
     })
 

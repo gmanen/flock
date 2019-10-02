@@ -6,6 +6,9 @@
     <script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://www.amcharts.com/lib/4/core.js"></script>
+    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
+    <script src="https://www.amcharts.com/lib/4/themes/material.js"></script>
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <meta charset="utf-8">
 </head>
@@ -13,16 +16,39 @@
 <div class="container">
     <h1>Shoaks</h1>
     <p class="lead">Building an ecosystem with AI-driven preys and predators</p>
-    <div class="mt-2 mb-2" style="margin-left: 50%; transform: translateX(-50%);" id="sketch"></div>
+    <div class="mt-2 mb-2" style="margin-left: 50%; transform: translateX(-50%);" id="top-down-sketch"></div>
+    <div class="justify-content-center" id="pov-container">
+        <div class="mr-2">
+            <div id="shoak-pov-sketch"></div>
+            <h2 class="text-center">Best shoak POV</h2>
+        </div>
+        <div>
+            <div id="foish-pov-sketch"></div>
+            <h2 class="text-center">Best foish POV</h2>
+        </div>
+    </div>
+    <div id="chart-container" style="display: none;">
+        <div id="chart" style="height: 500px;"></div>
+        <h2 id="chart-title"></h2>
+        <button id="chart-prev">Previous</button>
+        <button id="chart-refresh">Refresh</button>
+        <button id="chart-next">Next</button>
+    </div>
     <form>
         <hr/>
-        <div class="custom-control custom-switch">
-            <input id="display-pov" class="custom-control-input" type="checkbox" checked/>
-            <label for="display-pov" class="custom-control-label">Display shoak POV</label>
-        </div>
-        <div class="custom-control custom-switch">
-            <input id="debug" class="custom-control-input" type="checkbox" checked/>
-            <label for="debug" class="custom-control-label">Debug</label>
+        <div class="d-flex">
+            <div class="custom-control custom-switch mr-4">
+                <input id="display-pov" class="custom-control-input" type="checkbox" checked/>
+                <label for="display-pov" class="custom-control-label">Display POV</label>
+            </div>
+            <div class="custom-control custom-switch mr-4">
+                <input id="display-stats" class="custom-control-input" type="checkbox" checked/>
+                <label for="display-stats" class="custom-control-label">Display stats</label>
+            </div>
+            <div class="custom-control custom-switch">
+                <input id="debug" class="custom-control-input" type="checkbox" checked/>
+                <label for="debug" class="custom-control-label">Debug</label>
+            </div>
         </div>
         <hr/>
         <div class="d-flex">
@@ -33,7 +59,8 @@
                     </label>
                     <input id="shoaks-population-slider" class="custom-range" type="range" min="1" max="50" value="30"/>
                     <small class="form-text text-muted">
-                        Population size has a significant impact on performance when a new generation starts and all shoaks are alive.
+                        Population size has a significant impact on performance when a new generation starts and all
+                        shoaks are alive.
                     </small>
                 </div>
                 <div class="form-group">
@@ -44,6 +71,16 @@
                            step="5" value="20"/>
                     <small class="form-text text-muted">
                         Chance for each neuron of the neural network to mutate when reproducing.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="shoaks-reproduction-rate-slider">
+                        Shoak reproduction rate (<span class="shoaks-reproduction-rate-current">0.1</span>%)
+                    </label>
+                    <input id="shoaks-reproduction-rate-slider" class="custom-range" type="range" min="0" max="5"
+                           step="0.5" value="20"/>
+                    <small class="form-text text-muted">
+                        Chance each cycle for one new shoak to be born.
                     </small>
                 </div>
                 <div class="form-group">
@@ -81,29 +118,114 @@
                            step="0.5" value="0.5"/>
                     <small class="form-text text-muted">
                         Number of ray for each degree of the shoaks' FOV.<br>
-                        Increasing this value improves the quality of the shoaks' sight.<br>
-                        Keeping a high resolution with a wider field of view angle will have a significant (adverse) impact on performance.
+                        Increasing this value improves the quality of the shoaks' sight.
                     </small>
                 </div>
             </div>
             <div class="d-flex flex-column flex-fill">
                 <div class="form-group">
                     <label for="shoaks-nn-complexity-slider">
-                        Shoak neural net complexity (<span class="shoaks-nn-complexity-current">2</span>)
+                        Shoak neural net depth (<span class="shoaks-nn-complexity-current">2</span>)
                     </label>
-                    <input id="shoaks-nn-complexity-slider" class="custom-range" type="range" min="1" max="3" step="1"
+                    <input id="shoaks-nn-complexity-slider" class="custom-range" type="range" min="1" max="10" step="1"
                            value="2"/>
                     <small class="form-text text-muted">
                         Number of layers of neurons in the neural network of each shoak.<br>
                         Increasing this value basically means the shoaks will have more computational power, but will
-                        take longer to learn.
+                        take longer (mmuch longer with values above 2) to learn.
                     </small>
                 </div>
                 <div class="form-group">
                     <label for="shoaks-nn-size-slider">
                         Shoak neural net size (<span class="shoaks-nn-size-current">12</span>)
                     </label>
-                    <input id="shoaks-nn-size-slider" class="custom-range" type="range" min="5" max="25" step="1"
+                    <input id="shoaks-nn-size-slider" class="custom-range" type="range" min="5" max="50" step="1"
+                           value="12"/>
+                    <small class="form-text text-muted">
+                        Number of neurons in each layer.<br>
+                        Increasing this value as the same effect as increasing the complexity, but on a lesser scale.
+                    </small>
+                </div>
+            </div>
+        </div>
+        <hr/>
+        <div class="d-flex">
+            <div class="d-flex flex-column flex-fill mr-4">
+                <div class="form-group">
+                    <label for="foish-population-slider">
+                        Foish population (<span class="foish-population-current">5</span>)
+                    </label>
+                    <input id="foish-population-slider" class="custom-range" type="range" min="1" max="20" value="5"/>
+                    <small class="form-text text-muted">
+                        Number of foish per shoak.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="foish-mutation-rate-slider">
+                        Foish mutation rate (<span class="foish-mutation-rate-current">20</span>%)
+                    </label>
+                    <input id="foish-mutation-rate-slider" class="custom-range" type="range" min="5" max="40"
+                           step="5" value="20"/>
+                    <small class="form-text text-muted">
+                        Chance for each neuron of the neural network to mutate when reproducing.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="foish-reproduction-rate-slider">
+                        Foish reproduction rate (<span class="foish-reproduction-rate-current">20</span>%)
+                    </label>
+                    <input id="foish-reproduction-rate-slider" class="custom-range" type="range" min="0.1" max="40"
+                           step="5" value="20"/>
+                    <small class="form-text text-muted">
+                        Chance each cycle for one new foish to be born.
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-fill mr-4">
+                <div class="form-group">
+                    <label for="foish-perception-radius-slider">
+                        Foish perception radius (<span class="foish-perception-radius-current">200</span> pixels)
+                    </label>
+                    <input id="foish-perception-radius-slider" class="custom-range" type="range" min="100" max="500"
+                           step="50" value="200"/>
+                </div>
+                <div class="form-group">
+                    <label for="foish-fov-slider">
+                        Foish field of view (<span class="foish-fov-current">280</span>°)
+                    </label>
+                    <input id="foish-fov-slider" class="custom-range" type="range" min="45" max="280"
+                           step="5" value="300"/>
+                </div>
+                <div class="form-group">
+                    <label for="foish-resolution-slider">
+                        Foish resolution (<span class="foish-resolution-current">0.5</span>)
+                    </label>
+                    <input id="foish-resolution-slider" class="custom-range" type="range" min="0.5" max="2"
+                           step="0.5" value="0.5"/>
+                    <small class="form-text text-muted">
+                        Number of ray for each degree of the foishes' FOV.<br>
+                        Increasing this value improves the quality of the foishes' sight.
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-fill">
+                <div class="form-group">
+                    <label for="foish-nn-complexity-slider">
+                        Foish neural net depth (<span class="foish-nn-complexity-current">2</span>)
+                    </label>
+                    <input id="foish-nn-complexity-slider" class="custom-range" type="range" min="1" max="3" step="1"
+                           value="2"/>
+                    <small class="form-text text-muted">
+                        Number of layers of neurons in the neural network of each foish.<br>
+                        Increasing this value basically means the foishes will have more computational power, but will
+                        take longer to learn.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="foish-nn-size-slider">
+                        Foish neural net size (<span class="foish-nn-size-current">12</span>)
+                    </label>
+                    <input id="foish-nn-size-slider" class="custom-range" type="range" min="5" max="25" step="1"
                            value="12"/>
                     <small class="form-text text-muted">
                         Number of neurons in each layer.<br>
@@ -114,49 +236,126 @@
         </div>
         <hr/>
     </form>
-    <h2>How it works</h2>
+    <h2>Why shoak?</h2>
     <p>
-        On the left, you can see a top-down view of an environment where a simulation of a shoak (the circle) and a
-        school of fish (the triangles) evolve. On the right is a representation of the first person point of view of the
-        shoak. There are <span class="shoaks-population-current">20</span> "fishbowls" running in parallel, only the one
-        featuring the best shoak is displayed. At the start and when a new generation is born, the view may flicker a
-        lot as it switches between the different shoaks in the population before one of them takes the lead.
+        Initially, the project was just a flocking simulation based on Craig Reynolds' "boid" algorithm. When I
+        introduced the concept of predators, I had to name them though. I went for the shark/fish analogy and named them
+        by deriving their name the same way the word boid would be derived from the word bird. Shoak and foish are to
+        shark and fish what boid is to bird.
+    </p>
+    <h2>How does it work?</h2>
+    <p>
+        At the top, you can see a top-down view of an environment where a simulation of shoaks (the red-ish circles) and
+        a school of foish (the blue-ish triangles) evolve. Below that are representations of the first person point of
+        view of the best alive shoak and best alive foish.
     </p>
     <p>
-        The fishes are currently moving randomly, only following a flocking algorithm. They try to align with each other
-        and group themselves. There is no AI behind their movement.<br>
-        An AI - an artificial neural network, or digital brain - drives the shoak. The neural network has two outputs
-        (takes two decisions) every frame. The first output is a direction towards which to turn. The second output is
-        how much it wants to move forward in that direction. It makes those decisions according to what it can see - the
-        right-hand side of the scene.
+        The shoaks and foishes are moved around by a bunch of different forces, one of them an AI. Both are subjected to
+        a bounce force when they get too close to a wall. That force propels them in the opposite direction from the
+        wall, which keeps them within the boundaries.<br>
+        The foishes are affected by three more forces described by the boid algorithm: alignment, cohesion, and
+        separation. These forces induce the schooling behaviour they exhibit.<br>
+        Both the shoaks and the foishes are driven by an AI - their brain. The brain is a simple neural network,
+        interconnected layers of neurons. The neural network is fed numerical values as input and outputs two numerical
+        values. The output describes the direction it wants to orient its organism and how much it wants to move in that
+        direction. That information describes a steering vector resulting in another force that is applied to the
+        creatures.
     </p>
     <p>
-        Both the shoaks and the fishes have a mass. The shoaks loses mass every frame and has to eat the fishes to gain
-        mass. If a shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the shoaks /
-        fishes. The more massive shoaks are, the easier it is for them to eat fishes (they have a longer eating range),
-        but the slower they move. Same goes for the fishes, the smaller, less massive ones are faster (and are not as
-        nutritious for the shoak).
+        The input for the neural networks is the sight of the shoak / foish, which is calculated using a <a
+            target="_blank" href="https://en.wikipedia.org/wiki/Ray_casting">raycasting algorithm</a>. Each creature
+        casts a number of rays determined by the field of vision and the resolution parameters. Those rays are used to
+        detect collisions with the environment. Each ray adds a value between 0 and 1 to the input of the neural
+        network. Far away objects give a value closer to 0, close objects a value closer to 1.<br>
+        The raycasting is also used to render the POV scenes which are a 3d simulation of what the shoaks and foishes
+        see.<br>
+        At the moment, the shoaks can only see foishes, and foishes can only see shoaks. They don't see in colour (the
+        POV scenes are showing colours only for your benefit). Colour vision would require a more advanced neural
+        network.<br>
+        The shoaks have an additional input, a value between 0 and 1 which represents their hunger (how far they are
+        from their maximum mass).<br>
+        The foishes only call upon their neural network when they see a shoak. This is to avoid the neural network
+        taking over the flocking algorithm. It creates that sort of panic behaviour when the foish sees a shoak: it
+        turns around until it can't see the shoak anymore and then returns to business as usual.
     </p>
     <p>
-        The shoaks learn via a genetic evolution algorithm. When all of the shoaks are dead, a new generation is born,
-        evolved from the best performing shoak of the previous generation. The evolution consists of mutating the neural
-        network of the shoaks who are selected for reproduction.<br>
-        The shoaks are selected for reproduction randomly; those who are more efficient at eating fish are
-        more likely to reproduce. Currently, the reproduction is asexual: an individual chosen for reproduction clones
-        itself and the resulting child is mutated to form a new individual for the next generation.
+        Both the shoaks and the foishes have a mass. The shoaks lose mass every frame and have to eat the foishes to
+        gain mass. If a shoak's mass goes down to 0, it dies. The mass is represented visually by the size of the shoaks
+        / foishes. The more massive shoaks are, the easier it is for them to eat foishes (they have a longer eating
+        range), but the slower they move. The same goes for the foishes; the smaller, less massive ones are faster (and
+        are not as nutritious for the shoak).
+    </p>
+    <p>
+        The shoaks and foishes learn via a genetic evolution algorithm. An initial population spawns when loading the
+        page (or when changing parameters). At that time, the neural networks are initialized randomly. They evolve
+        primarily through mutation when reproduction occurs.<br>
+        Reproduction happens in two different ways:
+    </p>
+    <ul>
+        <li>At random every frame if the population isn't at its maximum size.</li>
+        <li>If all individuals of a population are dead, a new generation is born from the previous generation.</li>
+    </ul>
+    <p>
+        The individuals are selected for reproduction based on their fitness scores. A higher fitness score means a
+        higher chance of being selected.<br>
+        For the soaks, the fitness score depends on how much useful mass they gained during their life. Every time they
+        eat a fish, their score is only incremented if they were not already at their maximum mass beforehand.<br>
+        For the foishes, the fitness score is the number of frames they stayed alive.
+    </p>
+    <p>
+        There are two kinds of reproduction: sexual and asexual. There's a fifty-fifty chance for each to apply for
+        every reproduction event.<br>
+        In the case of asexual reproduction, an individual is selected to clone itself. In the case of sexual
+        reproduction, two individuals are selected. Their brains are merged into that of their child.<br>
+        The merge happens on a neuron by neuron basis. For each neuron, a coin is tossed to decide which parent passes
+        on their gene: the neuron value and connection weights with all neurons of the preceding layers.
+    </p>
+    <p>
+        Before integrating the population, the child's neural network undergoes mutation.<br>
+        The mutation algorithm works neuron by neuron. For each neuron, there is a chance a mutation occurs. If it does,
+        all the connection weights between it and the neurons from the previous layers are incremented with a random
+        number.
+    </p>
+    <h2>Debug mode</h2>
+    <p>
+        In debug mode, there is only one shoak, and 5 foishes, to limit somewhat the amount of information
+        displayed.</p>
+    <ul>
+        <li>
+            The boxes with a number in them are my implementation of a
+            <a target="_blank" href="https://en.wikipedia.org/wiki/Quadtree">quadtree algorithm</a>.
+            It's an algorithm used to optimize spacial search. The boxes are the subdivisions of space. The number
+            displayed at the center of each box shows the number of items it contains.
+        </li>
+        <li>
+            Blue lines indicate the direction toward the shoak / foishes are facing right now, and red lines the
+            direction chosen by the neural network.
+        </li>
+        <li>The white circles are the sight radius of the shoak / foishes.</li>
+        <li>The white lines are the rays used for vision.</li>
+        <li>Small red circles are drawn where a ray collides with something.</li>
+        <li>A bunch of information about selection and reproduction is displayed in the console.</li>
+    </ul>
+    <h2>Statistics</h2>
+    <p>
+        At the moment, the only statistics I display are graphs of the outputs of the neural network for the shoaks.
+        This is because a lot of the time, the shoaks choose to spin around, meaning their neural network always spits
+        out the same value. The graphs are used as a debug of sorts, showing how the output of the neural network
+        fluctuates. You can see that usually, shoaks with high fitness have much more fluctuation in their output, which
+        is what I expected to see.
     </p>
     <h2>Going forward</h2>
     <p>There is still a lot to do with this mini project, including</p>
     <ul>
-        <li>Give the fishes a neural network and try to have them learn to avoid the shoaks</li>
-        <li>Have all the shoaks and the fishes be in the same environment</li>
+        <li>Add more statistics.</li>
+        <li>Increase the size of the environment, depending on the number of shoaks.</li>
         <li>Try and incentivize the shoaks to work together</li>
-        <li>Add currents forcing movement on the shoaks and fishes</li>
-        <li>Add obstacles in the environment, providing fishes a way to maybe hide from the shoaks</li>
+        <li>Add currents forcing movement on the shoaks and foishes</li>
+        <li>Add obstacles in the environment, providing foishes a way to maybe hide from the shoaks</li>
         <li>
             Currently, the shoaks have no memory; all decisions taken by the neural net are based on the information
             gathered from the current frame only. Give the shoaks memory would maybe allow them to see patterns in the
-            fish movements
+            foish movements
         </li>
         <li>Go 3D</li>
     </ul>
@@ -172,37 +371,8 @@
     </p>
     <p>
         Some optimizations for the mutation algorithm were made thanks to a paper by David Montana on neural network
-        weight selection using genetic algorithm found
+        weight selection using a genetic algorithm found
         <a target="_blank" href="http://davidmontana.net/papers/hybrid.pdf">here.</a>
-    </p>
-    <h2>On the technical side</h2>
-    <p>
-        The project is developed with <a target="_blank" href="https://p5js.org/">p5.js.</a><br>
-        Code is available on GitHub: <a target="_blank" href="https://github.com/gmanen/shoaks">https://github.com/gmanen/shoaks</a>
-    </p>
-    <p>
-        Originally the shoaks and fishes were all in the same environment, but it was much harder to find the right
-        balance for the hyperparameters.
-    </p>
-    <p>
-        The first try at a neural net for the shoaks was a simple feed-forward with a sigmoid activation function. It
-        did not work well at all; most shoaks ended up going in a circle (always choosing the same rotation angle).
-        Changing the activation function for ReLU was a significant improvement in their learning capacity. I guess it
-        makes sense as sigmoid-ish activation functions seem to be more useful for classification problem whereas the
-        rotation decision is continuous.
-    </p>
-    <p>
-        I developed the neural network from scratch. I use this mini-project to learn more about neural nets and machine
-        learning in general.
-    </p>
-    <p>
-        Currently, the shoaks see in black and white, and only fishes. I want to add colors which would be a way to have
-        them see other shoaks, obstacles, walls and such as well as fishes. It probably requires a more complex neural
-        net, however.
-    </p>
-    <p>
-        At the moment the reproduction is purely asexual (clone and mutation). I intend to implement crossover and maybe
-        randomly decide for each new individual in the next generation if it's born via asexual or sexual reproduction.
     </p>
 </div>
 <script src="quadtree.js"></script>
