@@ -1,0 +1,21 @@
+{
+  "name": "shoaks",
+  "version": "1.0.0",
+  "description": "AI-driven predators and preys ",
+  "main": "index.js",
+  "repository": "git@github.com:gmanen/shoaks.git",
+  "author": "Guillaume MANEN <guillaume.manen@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "mocha": "^6.2.2",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0"
+  },
+  "scripts": {
+    "test": "mocha",
+    "build": "webpack --config webpack.config.js",
+    "start:dev": "webpack --watch --mode development"
+  }
+}

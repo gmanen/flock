@@ -1,3 +1,7 @@
+const Convolution1DLayer = require('./Convolution1DLayer')
+const FullyConnectedLayer = require('./FullyConnectedLayer')
+const ActivationLayer = require('./ActivationLayer')
+
 class NeuralNetwork {
     constructor() {
         this.layers = []
@@ -19,9 +23,16 @@ class NeuralNetwork {
             layer = new Convolution1DLayer(params)
         } else if ('fc' === type) {
             layer = new FullyConnectedLayer(params)
+        } else if ('activation' === type) {
+            layer = new ActivationLayer(params)
         }
 
         this.layers.push(layer)
+    }
+
+    getOutputShape()
+    {
+        return this.layers[this.layers.length - 1].getOutputShape()
     }
 
     predict(input) {
@@ -31,4 +42,14 @@ class NeuralNetwork {
 
         return input
     }
+
+    clone() {
+        const nn = new NeuralNetwork()
+
+        for (const layer of this.layers) {
+            nn.layers.push(layer.clone())
+        }
+    }
 }
+
+module.exports = NeuralNetwork
