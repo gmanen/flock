@@ -1,11 +1,32 @@
-function randomGaussian() {
-    let rand = 0
-
-    for (let i = 0; i < 6; i += 1) {
-        rand += Math.random()
+let return_v = false
+let v_val = 0.0
+let randomGaussianAndrej = function() {
+    if(return_v) {
+        return_v = false
+        return v_val
     }
 
-    return rand / 6
+    const u = 2*Math.random()-1
+    const v = 2*Math.random()-1
+    const r = u*u + v*v
+
+    if(r === 0 || r > 1) {
+        return randomGaussianAndrej()
+    }
+
+    const c = Math.sqrt(-2*Math.log(r)/r)
+
+    v_val = v*c
+    return_v = true
+
+    return u*c
+}
+
+function randomGaussian(mean, deviation) {
+    mean = mean || 0
+    deviation = deviation || 1
+
+    return mean + randomGaussianAndrej() * deviation
 }
 
 function dotProduct(weights, input) {
@@ -45,8 +66,13 @@ function flatten(array) {
     )
 }
 
+function zeros(length) {
+    return new Float64Array(length);
+}
+
 exports.randomGaussian = randomGaussian
 exports.dotProduct = dotProduct
 exports.addVector = addVector
 exports.sigmoid = sigmoid
 exports.flatten = flatten
+exports.zeros = zeros

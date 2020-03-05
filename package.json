@@ -8,6 +8,7 @@
   "license": "MIT",
   "private": false,
   "devDependencies": {
+    "benchmark": "^2.1.4",
     "mocha": "^6.2.2",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10",
@@ -16,6 +17,7 @@
   "scripts": {
     "test": "mocha",
     "build": "webpack --config webpack.config.js",
+    "benchmark": "node ./src/bm.js",
     "start:dev": "webpack --watch --mode development"
   }
 }

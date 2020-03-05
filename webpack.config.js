@@ -1,9 +1,16 @@
 const path = require('path');
 
 module.exports = {
-    entry: './src/sketch.js',
+    entry: {
+        'sketch': './src/sketch.js',
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'bundle.js'
+        filename: '[name].js'
+    },
+    module: {
+        noParse: [
+            /benchmark/,
+        ]
     },
 }
