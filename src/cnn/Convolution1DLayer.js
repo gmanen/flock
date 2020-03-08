@@ -55,7 +55,25 @@ class Convolution1DLayer extends Layer {
     }
 
     backPropagate() {
+        this.input.zeroGradients()
+        this.biases.zeroGradients()
 
+        for (let outputDepth = 0; outputDepth < this.output.depth; outputDepth++) {
+            this.weights[outputDepth].zeroGradients()
+
+            for (let outputWidth = 0; outputWidth < this.output.width; outputWidth) {
+                for (let inputDepth = 0; inputDepth < this.input.depth; inputDepth++) {
+                    const offset = outputWidth * this.stride
+
+                    for (let k = 0; k < this.kernelSize; k++) {
+                        this.input.gradients[inputDepth][0][offset + k] += this.weights[outputDepth].data[inputDepth][0][k] * this.output.gradients[outputDepth][0][outputWidth]
+                        this.weights[outputDepth].gradients[inputDepth][0][k] += this.input.data[inputDepth][0][offset + k] * this.output.gradients[outputDepth][0][outputWidth]
+                    }
+                }
+
+                this.biases.gradients[0][0][outputDepth] += this.output.gradients[outputDepth][0][outputWidth]
+            }
+        }
     }
 
     getOutputShape() {

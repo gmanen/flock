@@ -44,8 +44,8 @@ describe('NeuralNetwork', function () {
 
             layer.feedForward(new Volume([[2, 3, 4, 5], [1, 2, 3, 4]]))
 
-            assert.deepEqual(layer.output.data[0][0], [13.5, 17.5])
-            assert.deepEqual(layer.output.data[1][0], [-8, -9])
+            assert.deepEqual(layer.output.data[0][0], Float64Array.from([13.5, 17.5]))
+            assert.deepEqual(layer.output.data[1][0], Float64Array.from([-8, -9]))
         })
 
         it('should back propagate', function () {

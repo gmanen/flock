@@ -15,7 +15,7 @@
     "webpack-dev-server": "^3.9.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "mocha -b",
     "build": "webpack --config webpack.config.js",
     "benchmark": "node ./src/bm.js",
     "start:dev": "webpack --watch --mode development"

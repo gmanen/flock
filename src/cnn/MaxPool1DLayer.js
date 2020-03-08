@@ -46,15 +46,13 @@ class MaxPool1DLayer extends Layer {
         this.input.zeroGradients()
 
         for (let d = 0; d < this.output.depth; d++) {
-            for (let h = 0; h < this.output.height; h++) {
-                for (let w = 0; w < this.output.width; w++) {
-                    let found = false
+            for (let w = 0; w < this.output.width; w++) {
+                let found = false
 
-                    for (let k = 0; k < this.kernelSize; k++) {
-                        if (!found && this.input.data[d][h][w * this.stride + k] === this.output.data[d][h][w]) {
-                            this.input.gradients[d][h][w * this.stride + k] += this.output.gradients[d][h][w]
-                            found = true
-                        }
+                for (let k = 0; k < this.kernelSize; k++) {
+                    if (!found && this.input.data[d][0][w * this.stride + k] === this.output.data[d][0][w]) {
+                        this.input.gradients[d][0][w * this.stride + k] += this.output.gradients[d][0][w]
+                        found = true
                     }
                 }
             }
