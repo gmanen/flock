@@ -3,7 +3,7 @@ const NeuralNetwork = require('./cnn/NeuralNetwork')
 const _ = require('lodash')
 const benchmark = require('benchmark')
 
-const Benchmark = benchmark.runInContext({ _ });
+const Benchmark = benchmark.runInContext({ _ })
 const input = new Volume( 180, 1, 4)
 
 const convNet = new NeuralNetwork()
@@ -38,8 +38,8 @@ suite.add('Conv Neural Net', function() {
 }).add('Pool + Conv Neural Net', function() {
     pooledMurkyNet.predict(input)
 }).on('cycle', function(event) {
-    console.log(String(event.target));
+    console.log(String(event.target))
 }).on('complete', function() {
-    console.log('Fastest forward pass is ' + this.filter('fastest').map('name'));
-    console.log('Average time ' + (this.filter('fastest')[0].stats.mean * 1000.0).toFixed(2) + 'ms');
+    console.log('Fastest forward pass is ' + this.filter('fastest').map('name'))
+    console.log('Average time ' + (this.filter('fastest')[0].stats.mean * 1000.0).toFixed(2) + 'ms')
 }).run({ 'async': true })

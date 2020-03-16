@@ -17,7 +17,8 @@
   "scripts": {
     "test": "mocha -b",
     "build": "webpack --config webpack.config.js",
-    "benchmark": "node ./src/bm.js",
+    "benchmark:shoaks": "node ./src/bm_shoaks.js",
+    "benchmark:layers": "node ./src/bm_layers.js",
     "start:dev": "webpack --watch --mode development"
   }
 }
